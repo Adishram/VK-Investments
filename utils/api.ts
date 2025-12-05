@@ -1,0 +1,191 @@
+import { Platform } from 'react-native';
+
+// Backend API URL - Production
+const API_URL = 'https://vk-investment-backend.onrender.com/api';
+
+// PG Listing Interface
+export interface PGListing {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  location: string;
+  latitude: number;
+  longitude: number;
+  image_url: string;
+  images?: string[];
+  owner_contact: string;
+  house_no: string;
+  street: string;
+  city: string;
+  pincode: string;
+  gender?: string; // 'men', 'women', 'unisex'
+  occupancy_types?: string[];
+  occupancy_prices?: { [key: string]: number };
+  food_included: boolean;
+  notice_period?: string;
+  gate_close_time?: string;
+  safety_deposit?: string;
+  amenities?: string[];
+  rules?: string[];
+  rooms?: any[];
+  rating?: number;
+  rating_count?: number;
+  owner_id?: string;
+  owner_email?: string;
+  created_at?: string;
+}
+
+// Review Interface
+export interface Review {
+  id: number;
+  pg_id: number;
+  user_name: string;
+  rating: number;
+  review_text: string;
+  review_images?: string[];
+  created_at: string;
+}
+
+// Helper function to clean price - extracts numeric value from formatted string like "₹15000/mo"
+const cleanPrice = (price: any): number => {
+  if (typeof price === 'number') return price;
+  if (typeof price === 'string') {
+    // Remove currency symbols, commas, and suffixes like /mo, /month
+    const cleaned = price.replace(/[₹,]/g, '').replace(/\/mo(nth)?/gi, '').trim();
+    const num = parseInt(cleaned, 10);
+    return isNaN(num) ? 0 : num;
+  }
+  return 0;
+};
+
+// Helper function to clean PG data from backend
+const cleanPGData = (pg: any): PGListing => {
+  return {
+    ...pg,
+    price: cleanPrice(pg.price),
+    latitude: typeof pg.latitude === 'string' ? parseFloat(pg.latitude) : pg.latitude,
+    longitude: typeof pg.longitude === 'string' ? parseFloat(pg.longitude) : pg.longitude,
+  };
+};
+
+// API Functions
+export const api = {
+  // Get all PGs
+  async getPGs(ownerId?: string): Promise<PGListing[]> {
+    const url = ownerId ? `${API_URL}/pg?owner_id=${ownerId}` : `${API_URL}/pg`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch PGs');
+    const data = await response.json();
+    // Clean all PG data to fix formatted price strings
+    return data.map((pg: any) => cleanPGData(pg));
+  },
+
+  // Get PG by ID
+  async getPGById(id: number): Promise<PGListing> {
+    const pgs = await this.getPGs();
+    const pg = pgs.find(p => p.id === id);
+    if (!pg) throw new Error('PG not found');
+    return pg;
+  },
+
+  // Search PGs
+  async searchPGs(query: string, city?: string): Promise<PGListing[]> {
+    const allPGs = await this.getPGs();
+    return allPGs.filter(pg => {
+      const matchesQuery = pg.title.toLowerCase().includes(query.toLowerCase()) ||
+                          pg.location.toLowerCase().includes(query.toLowerCase()) ||
+                          pg.city.toLowerCase().includes(query.toLowerCase());
+      const matchesCity = !city || pg.city.toLowerCase() === city.toLowerCase();
+      return matchesQuery && matchesCity;
+    });
+  },
+
+  // Get PGs by city
+  async getPGsByCity(city: string): Promise<PGListing[]> {
+    const allPGs = await this.getPGs();
+    return allPGs.filter(pg => pg.city.toLowerCase() === city.toLowerCase());
+  },
+
+  // Get recommended PGs (high rated or nearby)
+  async getRecommendedPGs(city?: string): Promise<PGListing[]> {
+    const allPGs = await this.getPGs();
+    let filtered = city
+      ? allPGs.filter(pg => pg.city.toLowerCase() === city.toLowerCase())
+      : allPGs;
+
+    // Sort by rating
+    return filtered
+      .filter(pg => pg.rating && pg.rating > 4)
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 5);
+  },
+
+  // Add PG
+  async addPG(pgData: Partial<PGListing>): Promise<PGListing> {
+    const response = await fetch(`${API_URL}/pg`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pgData),
+    });
+    if (!response.ok) throw new Error('Failed to add PG');
+    return response.json();
+  },
+
+  // Get reviews for a PG
+  async getReviews(pgId: number): Promise<Review[]> {
+    const response = await fetch(`${API_URL}/pg/${pgId}/reviews`);
+    if (!response.ok) throw new Error('Failed to fetch reviews');
+    return response.json();
+  },
+
+  // Add review
+  async addReview(
+    pgId: number,
+    userName: string,
+    rating: number,
+    reviewText: string,
+    reviewImages?: string[]
+  ): Promise<Review> {
+    const response = await fetch(`${API_URL}/pg/${pgId}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_name: userName,
+        rating,
+        review_text: reviewText,
+        review_images: reviewImages || [],
+      }),
+    });
+    if (!response.ok) throw new Error('Failed to add review');
+    return response.json();
+  },
+
+  // Geocode address
+  async geocodeAddress(address: string): Promise<{ lat: number; lon: number; display_name: string }> {
+    const response = await fetch(`${API_URL}/geocode?address=${encodeURIComponent(address)}`);
+    if (!response.ok) throw new Error('Failed to geocode address');
+    return response.json();
+  },
+
+  
+  // Update User Profile (Phone)
+  async updateUserProfile(email: string, phone: string) {
+    const response = await fetch(`${API_URL}/user/profile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, phone }),
+    });
+    if (!response.ok) throw new Error('Failed to update profile');
+    return response.json();
+  },
+
+  // Get User Profile
+  async getUserProfile(email: string) {
+    const response = await fetch(`${API_URL}/user/profile/${encodeURIComponent(email)}`);
+    if (!response.ok) throw new Error('Failed to fetch profile');
+    return response.json();
+  },
+};
+
+export default api;

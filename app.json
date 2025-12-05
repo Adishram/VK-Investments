@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "VK-invstment",
-    "slug": "VK-invstment",
+    "name": "Book My PG",
+    "slug": "book-my-pg",
+    "scheme": "bookmypg",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,7 +14,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show PGs near you."
+      }
     },
     "android": {
       "adaptiveIcon": {
