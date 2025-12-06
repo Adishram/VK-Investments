@@ -166,8 +166,11 @@ const BottomNavBar = ({ onNavigate }: { onNavigate?: (route: string) => void }) 
       <TouchableOpacity style={styles.navItem}>
         <Ionicons name="home" size={24} color="#4ADE80" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.navItem}>
-        <Ionicons name="heart-outline" size={24} color="#888" />
+      <TouchableOpacity 
+        style={styles.navItem}
+        onPress={() => onNavigate?.('/(home)/my-pg')}
+      >
+        <Ionicons name="bed-outline" size={24} color="#888" />
       </TouchableOpacity>
       <TouchableOpacity 
         style={styles.navItem}
@@ -175,7 +178,10 @@ const BottomNavBar = ({ onNavigate }: { onNavigate?: (route: string) => void }) 
       >
         <Ionicons name="compass-outline" size={24} color="#888" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.navItem}>
+      <TouchableOpacity 
+        style={styles.navItem}
+        onPress={() => onNavigate?.('/(home)/chatbot')}
+      >
         <Ionicons name="chatbubble-outline" size={24} color="#888" />
       </TouchableOpacity>
       <TouchableOpacity 

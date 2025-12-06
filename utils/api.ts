@@ -186,6 +186,106 @@ export const api = {
     if (!response.ok) throw new Error('Failed to fetch profile');
     return response.json();
   },
+
+  // Send Chat Message
+  async sendChatMessage(
+    message: string,
+    history: { role: string; content: string }[],
+    userEmail?: string,
+    city?: string
+  ): Promise<{ text: string; pgIds?: number[] }> {
+    const response = await fetch(`${API_URL}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        history,
+        userEmail,
+        city
+      }),
+    });
+    
+    if (!response.ok) throw new Error('Failed to send message');
+    const data = await response.json();
+    
+    return {
+      text: data.content || data.message || 'I could not understand that.',
+      pgIds: data.pgIds
+    };
+  },
+
+  // Get My PG (User's booked PG)
+  async getMyPG(email: string): Promise<{
+    hasPG: boolean;
+    pg?: PGListing;
+    customer?: any;
+  }> {
+    const response = await fetch(`${API_URL}/user/${encodeURIComponent(email)}/my-pg`);
+    if (!response.ok) throw new Error('Failed to fetch My PG');
+    return response.json();
+  },
+
+  // Schedule Visit Request
+  async scheduleVisit(
+    userEmail: string,
+    userName: string,
+    pgId: number,
+    ownerEmail: string,
+    visitDate: string,
+    visitTime: string
+  ): Promise<any> {
+    const response = await fetch(`${API_URL}/visit-request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userEmail,
+        userName,
+        pgId,
+        ownerEmail,
+        visitDate,
+        visitTime,
+      }),
+    });
+    if (!response.ok) throw new Error('Failed to schedule visit');
+    return response.json();
+  },
+
+  // Get User's Visit Requests
+  async getVisitRequests(email: string): Promise<any[]> {
+    const response = await fetch(`${API_URL}/visit-request/${encodeURIComponent(email)}`);
+    if (!response.ok) throw new Error('Failed to fetch visit requests');
+    return response.json();
+  },
+
+  // Confirm Booking / Payment
+  async confirmBooking(data: {
+    name: string;
+    email: string;
+    mobile: string;
+    pgId: number;
+    roomType: string;
+    amount: number;
+    moveInDate?: string | null;
+  }): Promise<any> {
+    const response = await fetch(`${API_URL}/payment/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to confirm booking');
+    return response.json();
+  },
+
+  // Update Customer Check-in Date
+  async updateCheckInDate(customerId: number, moveInDate: string): Promise<any> {
+    const response = await fetch(`${API_URL}/customer/${customerId}/check-in-date`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ moveInDate }),
+    });
+    if (!response.ok) throw new Error('Failed to update check-in date');
+    return response.json();
+  },
 };
 
 export default api;

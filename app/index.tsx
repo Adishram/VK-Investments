@@ -10,6 +10,12 @@ export default function Index() {
           <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>
       </Link>
+      
+      <Link href="/(home)/chatbot" asChild>
+        <TouchableOpacity style={[styles.button, { marginTop: 20, backgroundColor: '#2b5aed' }]}>
+          <Text style={styles.buttonText}>Chatbot UI</Text>
+        </TouchableOpacity>
+      </Link>
     </View>
   );
 }

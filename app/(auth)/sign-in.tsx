@@ -26,6 +26,11 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [logoTapCount, setLogoTapCount] = useState(0);
+  
+  // Error states
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [generalError, setGeneralError] = useState('');
 
   // Auto-redirect if already signed in
   useEffect(() => {
@@ -34,17 +39,50 @@ export default function SignIn() {
     }
   }, [isSignedIn]);
 
+  // Clear errors when user types
+  useEffect(() => {
+    if (email) setEmailError('');
+  }, [email]);
+
+  useEffect(() => {
+    if (password) setPasswordError('');
+  }, [password]);
+
+  // Validate fields
+  const validateFields = (): boolean => {
+    let isValid = true;
+    setGeneralError('');
+    
+    if (!email.trim()) {
+      setEmailError('Email is required');
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError('Please enter a valid email');
+      isValid = false;
+    } else {
+      setEmailError('');
+    }
+
+    if (!password.trim()) {
+      setPasswordError('Password is required');
+      isValid = false;
+    } else {
+      setPasswordError('');
+    }
+
+    return isValid;
+  };
+
   // Handle login
   const handleLogin = async () => {
     if (!signIn) return;
-    setLoading(true);
-
-    // Validation
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Missing Fields', 'Please fill in both email and password.');
-      setLoading(false);
+    
+    if (!validateFields()) {
       return;
     }
+
+    setLoading(true);
+    setGeneralError('');
 
     try {
       const signInAttempt = await signIn.create({
@@ -59,7 +97,7 @@ export default function SignIn() {
     } catch (err: any) {
       console.error('Error:', err);
       const errorMessage = err.errors?.[0]?.message || 'Invalid email or password. Please try again.';
-      Alert.alert('Sign In Failed', errorMessage);
+      setGeneralError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -76,7 +114,7 @@ export default function SignIn() {
         redirectUrlComplete: '/(home)',
       });
     } catch (err: any) {
-      alert(err.errors?.[0]?.message || 'Google sign-in failed');
+      setGeneralError(err.errors?.[0]?.message || 'Google sign-in failed');
     }
   };
 
@@ -111,6 +149,13 @@ export default function SignIn() {
         {/* Welcome Text */}
         <Text style={styles.welcome}>Book My PG</Text>
 
+        {/* General Error Message */}
+        {generalError ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>⚠️ {generalError}</Text>
+          </View>
+        ) : null}
+
         {/* User Type Toggle */}
         <View style={styles.tabContainer}>
           <TouchableOpacity style={[styles.tab, styles.activeTab]}>
@@ -125,9 +170,9 @@ export default function SignIn() {
 
         {/* Email Input */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>username</Text>
+          <Text style={styles.label}>Email</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, emailError && styles.inputError]}
             value={email}
             onChangeText={setEmail}
             placeholder="Enter your email"
@@ -135,12 +180,13 @@ export default function SignIn() {
             autoCapitalize="none"
             keyboardType="email-address"
           />
+          {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
         </View>
 
         {/* Password Input */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Password</Text>
-          <View style={styles.passwordContainer}>
+          <View style={[styles.passwordContainer, passwordError && styles.inputError]}>
             <TextInput
               style={styles.passwordInput}
               value={password}
@@ -153,6 +199,7 @@ export default function SignIn() {
               <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '🔒'}</Text>
             </TouchableOpacity>
           </View>
+          {passwordError ? <Text style={styles.fieldError}>{passwordError}</Text> : null}
         </View>
 
         {/* Forgot Password */}
@@ -207,8 +254,22 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
     color: '#000',
+  },
+  errorContainer: {
+    backgroundColor: '#FFEBEE',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+  },
+  errorText: {
+    color: '#C62828',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   tabContainer: {
     flexDirection: 'row',
@@ -254,6 +315,18 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     color: '#000',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  inputError: {
+    borderColor: '#f44336',
+    borderWidth: 1,
+  },
+  fieldError: {
+    color: '#f44336',
+    fontSize: 12,
+    marginTop: 6,
+    fontWeight: '500',
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -261,6 +334,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 12,
     paddingRight: 16,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   passwordInput: {
     flex: 1,

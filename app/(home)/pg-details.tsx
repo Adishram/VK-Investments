@@ -24,6 +24,7 @@ import { api, PGListing, Review } from '../../utils/api';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useUser } from '@clerk/clerk-expo';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width, height } = Dimensions.get('window');
 const IMAGE_HEIGHT = height * 0.55; // 55% of screen height for larger image
@@ -41,6 +42,18 @@ export default function PGDetails() {
   const [reviewText, setReviewText] = useState('');
   const [reviewImages, setReviewImages] = useState<string[]>([]);
   const [submittingReview, setSubmittingReview] = useState(false);
+  
+  // Schedule Visit State
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [visitDate, setVisitDate] = useState(new Date());
+  const [visitTime, setVisitTime] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [schedulingVisit, setSchedulingVisit] = useState(false);
+  
+  // Room Selection State
+  const [showRoomModal, setShowRoomModal] = useState(false);
+  const [selectedRoomType, setSelectedRoomType] = useState<string | null>(null);
 
   useEffect(() => {
     loadPGDetails();
@@ -211,8 +224,37 @@ export default function PGDetails() {
     if (pg.owner_contact) Linking.openURL(`tel:${pg.owner_contact}`);
   };
 
-  const handleChat = () => {
-    if (pg.owner_contact) Linking.openURL(`sms:${pg.owner_contact}`);
+  const handleScheduleVisit = async () => {
+    if (!user) {
+      Alert.alert('Login Required', 'Please sign in to schedule a visit.');
+      return;
+    }
+
+    setSchedulingVisit(true);
+    try {
+      const dateStr = visitDate.toISOString().split('T')[0];
+      const timeStr = visitTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      
+      await api.scheduleVisit(
+        user.primaryEmailAddress?.emailAddress || '',
+        user.fullName || '',
+        pg.id,
+        pg.owner_email || '',
+        dateStr,
+        timeStr
+      );
+      
+      setShowScheduleModal(false);
+      Alert.alert(
+        'Visit Scheduled!',
+        'Your visit request has been sent to the owner. You can check the status in My PG page.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to schedule visit. Please try again.');
+    } finally {
+      setSchedulingVisit(false);
+    }
   };
 
   const handleShare = async () => {
@@ -472,9 +514,9 @@ export default function PGDetails() {
                 <Ionicons name="call" size={20} color="#fff" />
                 <Text style={styles.callButtonText}>Call</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
-                <Ionicons name="chatbubble-outline" size={20} color="#0F2925" />
-                <Text style={styles.chatButtonText}>Chat</Text>
+              <TouchableOpacity style={styles.chatButton} onPress={() => setShowScheduleModal(true)}>
+                <Ionicons name="calendar-outline" size={20} color="#0F2925" />
+                <Text style={styles.chatButtonText}>Schedule Visit</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -528,7 +570,7 @@ export default function PGDetails() {
             <Text style={styles.startingFrom}>Starting from</Text>
             <Text style={styles.bottomPrice}>₹{pg.price}<Text style={styles.perPerson}>/mo</Text></Text>
           </View>
-          <TouchableOpacity style={styles.bookButton}>
+          <TouchableOpacity style={styles.bookButton} onPress={() => setShowRoomModal(true)}>
             <Text style={styles.bookButtonText}>Book Now</Text>
             <Ionicons name="arrow-forward" size={18} color="#000" />
           </TouchableOpacity>
@@ -590,6 +632,146 @@ export default function PGDetails() {
               ) : (
                 <Text style={styles.submitReviewText}>Submit Review</Text>
               )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Schedule Visit Modal */}
+      <Modal visible={showScheduleModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.reviewModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Schedule Visit</Text>
+              <TouchableOpacity onPress={() => setShowScheduleModal(false)}>
+                <Ionicons name="close" size={28} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.ratingLabel}>Select Date</Text>
+            <TouchableOpacity 
+              style={styles.datePickerButton}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Ionicons name="calendar" size={20} color="#4ADE80" />
+              <Text style={styles.datePickerText}>
+                {visitDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+              </Text>
+            </TouchableOpacity>
+            
+            {showDatePicker && (
+              <DateTimePicker
+                value={visitDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                minimumDate={new Date()}
+                onChange={(event, date) => {
+                  setShowDatePicker(Platform.OS === 'ios');
+                  if (date) setVisitDate(date);
+                }}
+              />
+            )}
+
+            <Text style={styles.ratingLabel}>Select Time</Text>
+            <TouchableOpacity 
+              style={styles.datePickerButton}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <Ionicons name="time" size={20} color="#4ADE80" />
+              <Text style={styles.datePickerText}>
+                {visitTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </TouchableOpacity>
+
+            {showTimePicker && (
+              <DateTimePicker
+                value={visitTime}
+                mode="time"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, time) => {
+                  setShowTimePicker(Platform.OS === 'ios');
+                  if (time) setVisitTime(time);
+                }}
+              />
+            )}
+
+            <TouchableOpacity 
+              style={[styles.submitReviewBtn, schedulingVisit && { opacity: 0.6 }]}
+              onPress={handleScheduleVisit}
+              disabled={schedulingVisit}
+            >
+              {schedulingVisit ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={styles.submitReviewText}>Schedule Visit</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Room Selection Modal */}
+      <Modal visible={showRoomModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.reviewModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Room Type</Text>
+              <TouchableOpacity onPress={() => setShowRoomModal(false)}>
+                <Ionicons name="close" size={28} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.ratingLabel}>Available Rooms</Text>
+            
+            {(pg.occupancy_types || ['Single Sharing', 'Double Sharing', 'Triple Sharing']).map((type, index) => {
+              const roomPrice = pg.occupancy_prices?.[type] || pg.price;
+              return (
+                <TouchableOpacity 
+                  key={index}
+                  style={[
+                    styles.roomOption,
+                    selectedRoomType === type && styles.roomOptionSelected
+                  ]}
+                  onPress={() => setSelectedRoomType(type)}
+                >
+                  <View style={styles.roomOptionLeft}>
+                    <Text style={styles.roomOptionType}>{type}</Text>
+                    <Text style={styles.roomOptionPrice}>₹{roomPrice}/month</Text>
+                  </View>
+                  <View style={[
+                    styles.roomRadio,
+                    selectedRoomType === type && styles.roomRadioSelected
+                  ]}>
+                    {selectedRoomType === type && (
+                      <View style={styles.roomRadioInner} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            <TouchableOpacity 
+              style={[styles.submitReviewBtn, !selectedRoomType && { opacity: 0.5 }]}
+              disabled={!selectedRoomType}
+              onPress={() => {
+                setShowRoomModal(false);
+                const roomPrice = pg.occupancy_prices?.[selectedRoomType || ''] || pg.price;
+                router.push({
+                  pathname: '/(home)/booking',
+                  params: {
+                    pgId: pg.id.toString(),
+                    pgTitle: pg.title,
+                    pgLocation: pg.location,
+                    pgCity: pg.city,
+                    pgImage: pg.image_url || pg.images?.[0] || '',
+                    roomType: selectedRoomType || '',
+                    price: roomPrice.toString(),
+                    ownerEmail: pg.owner_email || '',
+                  },
+                });
+              }}
+            >
+              <Text style={styles.submitReviewText}>Continue to Booking</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1138,6 +1320,66 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+    marginTop: 8,
+  },
+  datePickerText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  
+  // Room Selection Modal Styles
+  roomOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  roomOptionSelected: {
+    borderColor: '#4ADE80',
+    backgroundColor: 'rgba(74, 222, 128, 0.1)',
+  },
+  roomOptionLeft: {
+    gap: 4,
+  },
+  roomOptionType: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  roomOptionPrice: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+  },
+  roomRadio: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  roomRadioSelected: {
+    borderColor: '#4ADE80',
+  },
+  roomRadioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#4ADE80',
   },
   
   // Skeleton Loader Styles
