@@ -120,51 +120,6 @@ export default function PaymentPage() {
             </View>
           </BlurView>
 
-          {/* Check-in Date Section */}
-          <BlurView intensity={40} tint="dark" style={styles.dateSection}>
-            <View style={styles.dateSectionInner}>
-              <Text style={styles.dateTitle}>Check-in Date</Text>
-              <TouchableOpacity 
-                style={styles.dateSelector}
-                onPress={() => setShowDatePicker(!showDatePicker)}
-              >
-                <Ionicons name="calendar" size={20} color="#4ADE80" />
-                <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
-                <Ionicons name={showDatePicker ? "chevron-down" : "chevron-forward"} size={20} color="#fff" />
-              </TouchableOpacity>
-              
-              {showDatePicker && (
-                <View>
-                  <DateTimePicker
-                    value={selectedDate ? new Date(selectedDate) : new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    minimumDate={new Date()}
-                    textColor="#fff"
-                    onChange={(event, date) => {
-                      if (Platform.OS !== 'ios') {
-                        setShowDatePicker(false);
-                      }
-                      if (event.type === 'set' && date) {
-                        setSelectedDate(date.toISOString());
-                      }
-                    }}
-                  />
-                  {Platform.OS === 'ios' && (
-                    <TouchableOpacity 
-                      style={styles.datePickerDoneButton}
-                      onPress={() => setShowDatePicker(false)}
-                    >
-                      <Text style={styles.datePickerDoneText}>Done</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-              
-              <Text style={styles.dateHint}>You can update this date later from My PG page</Text>
-            </View>
-          </BlurView>
-
           {/* QR Code Section */}
           <BlurView intensity={40} tint="dark" style={styles.qrSection}>
             <View style={styles.qrSectionInner}>

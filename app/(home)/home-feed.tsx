@@ -435,7 +435,7 @@ export default function HomeFeed() {
       />
 
       {/* Main Content */}
-      <View style={[styles.scrollContent, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 50 }]}>
+      <View style={styles.scrollContent}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -443,7 +443,7 @@ export default function HomeFeed() {
           }
         >
           {/* Header Pill - Glassmorphic */}
-          <View style={styles.headerPillWrapper}>
+          <View style={[styles.headerPillWrapper, { paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16 }]}>
             <BlurView intensity={80} tint="dark" style={styles.headerPill}>
               <TouchableOpacity
                 style={styles.locationButton}
