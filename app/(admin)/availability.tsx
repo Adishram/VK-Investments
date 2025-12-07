@@ -150,7 +150,7 @@ export default function AvailabilityScreen() {
         </View>
         <View style={styles.footerStat}>
           <Ionicons name="cash-outline" size={18} color="#3B82F6" />
-          <Text style={styles.footerStatText}>₹{pg.price}/mo</Text>
+          <Text style={styles.footerStatText}>₹{String(pg.price).replace(/\/mo/gi, '').replace(/\/month/gi, '')}</Text>
         </View>
         <View style={styles.footerStat}>
           <Ionicons name={pg.food_included ? 'restaurant' : 'restaurant-outline'} size={18} color={pg.food_included ? '#F59E0B' : '#9CA3AF'} />
