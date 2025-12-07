@@ -233,6 +233,36 @@ export default function MyPGPage() {
                 {customer.room_type || 'N/A'}
               </Text>
             </View>
+
+            {/* Cancel Booking Button */}
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={() => {
+                Alert.alert(
+                  'Cancel Booking',
+                  'Are you sure you want to cancel your PG booking? This action cannot be undone.',
+                  [
+                    { text: 'No, Keep Booking', style: 'cancel' },
+                    { 
+                      text: 'Yes, Cancel', 
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await api.cancelBooking(customer.id);
+                          Alert.alert('Booking Cancelled', 'Your booking has been cancelled successfully.');
+                          loadBookingInfo(); // Refresh the page
+                        } catch (error) {
+                          Alert.alert('Error', 'Failed to cancel booking. Please try again.');
+                        }
+                      }
+                    },
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="close-circle-outline" size={20} color="#f44336" />
+              <Text style={styles.cancelButtonText}>Cancel Booking</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -252,18 +282,7 @@ export default function MyPGPage() {
           </BlurView>
         </View>
 
-        {/* Announcements Section */}
-        <View style={styles.announcementsSection}>
-          <Text style={styles.sectionTitle}>Announcements</Text>
-          <View style={styles.announcementPlaceholder}>
-            <Ionicons name="megaphone-outline" size={40} color="rgba(255,255,255,0.3)" />
-            <Text style={styles.announcementPlaceholderText}>
-              No announcements yet
-            </Text>
-          </View>
-        </View>
-
-        {/* Scheduled Visits Section */}
+        {/* Scheduled Visits Section - Now on top */}
         {visitRequests.length > 0 && (
           <View style={styles.announcementsSection}>
             <Text style={styles.sectionTitle}>Scheduled Visits</Text>
@@ -308,6 +327,17 @@ export default function MyPGPage() {
             ))}
           </View>
         )}
+
+        {/* Announcements Section */}
+        <View style={styles.announcementsSection}>
+          <Text style={styles.sectionTitle}>Announcements</Text>
+          <View style={styles.announcementPlaceholder}>
+            <Ionicons name="megaphone-outline" size={40} color="rgba(255,255,255,0.3)" />
+            <Text style={styles.announcementPlaceholderText}>
+              No announcements yet
+            </Text>
+          </View>
+        </View>
       </>
     );
   };
@@ -634,5 +664,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 20,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f44336',
+    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+  },
+  cancelButtonText: {
+    color: '#f44336',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

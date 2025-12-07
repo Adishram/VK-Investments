@@ -224,9 +224,48 @@ export default function PGDetails() {
     if (pg.owner_contact) Linking.openURL(`tel:${pg.owner_contact}`);
   };
 
+  // Validate schedule visit date/time
+  const validateScheduleDateTime = (): { valid: boolean; message?: string } => {
+    const now = new Date();
+    const selectedDateTime = new Date(visitDate);
+    selectedDateTime.setHours(visitTime.getHours(), visitTime.getMinutes());
+
+    // Check if date is in the past
+    if (visitDate < new Date(now.getFullYear(), now.getMonth(), now.getDate())) {
+      return { valid: false, message: 'Please select a future date.' };
+    }
+
+    // Check if time is within 6 hours (same day only)
+    const isSameDay = visitDate.toDateString() === now.toDateString();
+    if (isSameDay) {
+      const hoursUntilVisit = (selectedDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+      if (hoursUntilVisit < 6) {
+        return { valid: false, message: 'Visits must be scheduled at least 6 hours in advance. Please select a time tomorrow or later.' };
+      }
+    }
+
+    // Check time window (7am - 7pm)
+    const hour = visitTime.getHours();
+    if (hour < 7) {
+      return { valid: false, message: 'Visits can only be scheduled between 7:00 AM and 7:00 PM. Please select a later time.' };
+    }
+    if (hour >= 19) {
+      return { valid: false, message: 'Visits can only be scheduled between 7:00 AM and 7:00 PM. Please select an earlier time.' };
+    }
+
+    return { valid: true };
+  };
+
   const handleScheduleVisit = async () => {
     if (!user) {
       Alert.alert('Login Required', 'Please sign in to schedule a visit.');
+      return;
+    }
+
+    // Validate date/time
+    const validation = validateScheduleDateTime();
+    if (!validation.valid) {
+      Alert.alert('Invalid Time', validation.message);
       return;
     }
 
@@ -637,24 +676,24 @@ export default function PGDetails() {
         </View>
       </Modal>
 
-      {/* Schedule Visit Modal */}
-      <Modal visible={showScheduleModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.reviewModalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Schedule Visit</Text>
-              <TouchableOpacity onPress={() => setShowScheduleModal(false)}>
-                <Ionicons name="close" size={28} color="#fff" />
-              </TouchableOpacity>
-            </View>
+      {/* Schedule Visit Modal - Full Screen White */}
+      <Modal visible={showScheduleModal} animationType="slide">
+        <View style={styles.scheduleModalContainer}>
+          <View style={styles.scheduleModalHeader}>
+            <Text style={styles.scheduleModalTitle}>Schedule Visit</Text>
+            <TouchableOpacity onPress={() => setShowScheduleModal(false)}>
+              <Ionicons name="close" size={28} color="#000" />
+            </TouchableOpacity>
+          </View>
 
-            <Text style={styles.ratingLabel}>Select Date</Text>
+          <View style={styles.scheduleModalContent}>
+            <Text style={styles.scheduleLabel}>Select Date</Text>
             <TouchableOpacity 
-              style={styles.datePickerButton}
+              style={styles.scheduleDateButton}
               onPress={() => setShowDatePicker(true)}
             >
               <Ionicons name="calendar" size={20} color="#4ADE80" />
-              <Text style={styles.datePickerText}>
+              <Text style={styles.scheduleDateText}>
                 {visitDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
               </Text>
             </TouchableOpacity>
@@ -672,13 +711,13 @@ export default function PGDetails() {
               />
             )}
 
-            <Text style={styles.ratingLabel}>Select Time</Text>
+            <Text style={styles.scheduleLabel}>Select Time</Text>
             <TouchableOpacity 
-              style={styles.datePickerButton}
+              style={styles.scheduleDateButton}
               onPress={() => setShowTimePicker(true)}
             >
               <Ionicons name="time" size={20} color="#4ADE80" />
-              <Text style={styles.datePickerText}>
+              <Text style={styles.scheduleDateText}>
                 {visitTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
               </Text>
             </TouchableOpacity>
@@ -694,16 +733,18 @@ export default function PGDetails() {
                 }}
               />
             )}
+          </View>
 
+          <View style={styles.scheduleModalFooter}>
             <TouchableOpacity 
-              style={[styles.submitReviewBtn, schedulingVisit && { opacity: 0.6 }]}
+              style={[styles.scheduleSubmitBtn, schedulingVisit && { opacity: 0.6 }]}
               onPress={handleScheduleVisit}
               disabled={schedulingVisit}
             >
               {schedulingVisit ? (
-                <ActivityIndicator color="#000" />
+                <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.submitReviewText}>Schedule Visit</Text>
+                <Text style={styles.scheduleSubmitText}>Schedule Visit</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -1380,6 +1421,70 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: '#4ADE80',
+  },
+  
+  // Schedule Visit Full Screen Modal Styles
+  scheduleModalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  scheduleModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  scheduleModalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  scheduleModalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  scheduleLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+    marginTop: 20,
+  },
+  scheduleDateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  scheduleDateText: {
+    color: '#000',
+    fontSize: 16,
+    flex: 1,
+  },
+  scheduleModalFooter: {
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  scheduleSubmitBtn: {
+    backgroundColor: '#4ADE80',
+    paddingVertical: 18,
+    borderRadius: 30,
+    alignItems: 'center',
+  },
+  scheduleSubmitText: {
+    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   
   // Skeleton Loader Styles

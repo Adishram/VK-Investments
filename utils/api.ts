@@ -286,6 +286,114 @@ export const api = {
     if (!response.ok) throw new Error('Failed to update check-in date');
     return response.json();
   },
+
+  // Cancel Booking
+  async cancelBooking(customerId: number): Promise<any> {
+    const response = await fetch(`${API_URL}/customer/${customerId}/cancel`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to cancel booking');
+    return response.json();
+  },
+
+  // ==================== SUPER ADMIN APIs ====================
+
+  // Super Admin Login
+  async superAdminLogin(email: string, password: string): Promise<{ success: boolean }> {
+    const response = await fetch(`${API_URL}/super-admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!response.ok) throw new Error('Invalid credentials');
+    return response.json();
+  },
+
+  // Get Availability (All PGs with details)
+  async getAvailability(search?: string, city?: string, locality?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (city) params.append('city', city);
+    if (locality) params.append('locality', locality);
+    
+    const url = `${API_URL}/super-admin/availability${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch availability');
+    return response.json();
+  },
+
+  // Get Booking Reports
+  async getBookingReports(search?: string, pgName?: string, roomType?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (pgName) params.append('pgName', pgName);
+    if (roomType) params.append('roomType', roomType);
+    
+    const url = `${API_URL}/super-admin/bookings${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch bookings');
+    return response.json();
+  },
+
+  // Get All PG Owners
+  async getOwners(search?: string): Promise<any[]> {
+    const url = search 
+      ? `${API_URL}/super-admin/owners?search=${encodeURIComponent(search)}`
+      : `${API_URL}/super-admin/owners`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch owners');
+    return response.json();
+  },
+
+  // Add PG Owner
+  async addOwner(data: {
+    name: string;
+    email: string;
+    mobile: string;
+    city: string;
+    state?: string;
+    address?: string;
+  }): Promise<{ owner: any; generatedPassword: string; message: string }> {
+    const response = await fetch(`${API_URL}/super-admin/add-owner`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to add owner');
+    }
+    return response.json();
+  },
+
+  // Get Owner Details with PGs and Customers
+  async getOwnerDetails(id: number): Promise<{
+    owner: any;
+    pgs: any[];
+    stats: { totalPGs: number; totalCustomers: number };
+  }> {
+    const response = await fetch(`${API_URL}/super-admin/owner/${id}/details`);
+    if (!response.ok) throw new Error('Failed to fetch owner details');
+    return response.json();
+  },
+
+  // Delete PG Owner
+  async deleteOwner(id: number): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_URL}/super-admin/owner/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete owner');
+    return response.json();
+  },
+
+  // Notify Customers for Payment
+  async notifyPayment(): Promise<{ message: string }> {
+    const response = await fetch(`${API_URL}/super-admin/notify-payment`, {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to send notifications');
+    return response.json();
+  },
 };
 
 export default api;

@@ -9,24 +9,32 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-
-const ADMIN_CREDENTIALS = {
-  email: 'admin@bookmypg.com',
-  password: 'Admin@123',
-};
+import api from '../../utils/api';
 
 export default function AdminLogin() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter email and password');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await api.superAdminLogin(email.trim(), password);
       router.replace('/(admin)');
-    } else {
-      alert('Invalid admin credentials');
+    } catch (error) {
+      Alert.alert('Error', 'Invalid admin credentials');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,8 +71,16 @@ export default function AdminLogin() {
           />
         </View>
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Login as Admin</Text>
+        <TouchableOpacity 
+          style={[styles.loginButton, loading && { opacity: 0.7 }]} 
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.loginButtonText}>Login as Admin</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.back()}>
