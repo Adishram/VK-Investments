@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   TextInput,
   Platform,
   StatusBar,
@@ -60,6 +59,7 @@ export default function AvailabilityScreen() {
       setPGs(data);
     } catch (error) {
       console.error('Error loading availability:', error);
+      setPGs([]);
     } finally {
       setLoading(false);
     }
@@ -161,8 +161,8 @@ export default function AvailabilityScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#10B981" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -216,7 +216,7 @@ export default function AvailabilityScreen() {
             <View style={styles.emptyContainer}>
               <Ionicons name="business-outline" size={64} color="#D1D5DB" />
               <Text style={styles.emptyText}>No PGs found</Text>
-              <Text style={styles.emptySubtext}>Try a different search term</Text>
+              <Text style={styles.emptySubtext}>Pull down to refresh</Text>
             </View>
           ) : (
             filteredPGs.map(renderPGCard)
@@ -224,7 +224,7 @@ export default function AvailabilityScreen() {
           <View style={styles.bottomSpacing} />
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -239,8 +239,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#10B981',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16,
+    paddingBottom: 16,
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,
   },
   backButton: {
     padding: 8,

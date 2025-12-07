@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Platform,
   StatusBar,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,7 @@ export default function AdminDashboard() {
     totalOwners: 0,
     totalBookings: 0,
   });
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -27,23 +29,39 @@ export default function AdminDashboard() {
 
   const loadStats = async () => {
     try {
-      const [pgs, owners, bookings] = await Promise.all([
+      const [pgsRes, ownersRes, bookingsRes] = await Promise.allSettled([
         api.getAvailability(),
         api.getOwners(),
         api.getBookingReports(),
       ]);
+      
       setStats({
-        totalPGs: pgs.length,
-        totalOwners: owners.length,
-        totalBookings: bookings.length,
+        totalPGs: pgsRes.status === 'fulfilled' ? pgsRes.value.length : 0,
+        totalOwners: ownersRes.status === 'fulfilled' ? ownersRes.value.length : 0,
+        totalBookings: bookingsRes.status === 'fulfilled' ? bookingsRes.value.length : 0,
       });
     } catch (error) {
       console.error('Error loading stats:', error);
     }
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadStats();
+    setRefreshing(false);
+  }, []);
+
   const handleLogout = () => {
     router.replace('/(auth)/sign-in');
+  };
+
+  const handlePaymentAlert = async () => {
+    try {
+      const result = await api.notifyPayment();
+      Alert.alert('Success', result.message);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to send notifications');
+    }
   };
 
   const dashboardItems = [
@@ -53,7 +71,6 @@ export default function AdminDashboard() {
       subtitle: `${stats.totalPGs} PGs Listed`,
       icon: 'business-outline',
       color: '#10B981',
-      gradient: ['#10B981', '#059669'],
     },
     {
       id: 'booking-reports',
@@ -61,7 +78,6 @@ export default function AdminDashboard() {
       subtitle: `${stats.totalBookings} Bookings`,
       icon: 'document-text-outline',
       color: '#3B82F6',
-      gradient: ['#3B82F6', '#2563EB'],
     },
     {
       id: 'owners',
@@ -69,7 +85,6 @@ export default function AdminDashboard() {
       subtitle: `${stats.totalOwners} Owners`,
       icon: 'people-outline',
       color: '#8B5CF6',
-      gradient: ['#8B5CF6', '#7C3AED'],
     },
     {
       id: 'notifications',
@@ -77,26 +92,20 @@ export default function AdminDashboard() {
       subtitle: 'Send Reminders',
       icon: 'notifications-outline',
       color: '#F59E0B',
-      gradient: ['#F59E0B', '#D97706'],
     },
   ];
 
   const handleCardPress = async (id: string) => {
     if (id === 'notifications') {
-      try {
-        const result = await api.notifyPayment();
-        alert(result.message);
-      } catch (error) {
-        alert('Failed to send notifications');
-      }
+      handlePaymentAlert();
     } else {
       router.push(`/(admin)/${id}` as any);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -109,7 +118,13 @@ export default function AdminDashboard() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10B981" />
+        }
+      >
         {/* Stats Overview */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
@@ -154,11 +169,11 @@ export default function AdminDashboard() {
           <Ionicons name="information-circle-outline" size={24} color="#6B7280" />
           <Text style={styles.infoText}>
             Manage all PG listings, owners, and bookings from this dashboard. 
-            Use the cards above to navigate to different sections.
+            Pull down to refresh stats.
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -166,7 +181,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 0,
   },
   header: {
     flexDirection: 'row',

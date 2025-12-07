@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   TextInput,
   Platform,
   StatusBar,
@@ -164,8 +163,8 @@ export default function BookingReportsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -219,7 +218,7 @@ export default function BookingReportsScreen() {
             <View style={styles.emptyContainer}>
               <Ionicons name="document-text-outline" size={64} color="#D1D5DB" />
               <Text style={styles.emptyText}>No bookings found</Text>
-              <Text style={styles.emptySubtext}>Try a different search term</Text>
+              <Text style={styles.emptySubtext}>Pull down to refresh</Text>
             </View>
           ) : (
             filteredBookings.map(renderBookingCard)
@@ -227,7 +226,7 @@ export default function BookingReportsScreen() {
           <View style={styles.bottomSpacing} />
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -242,8 +241,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#3B82F6',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16,
+    paddingBottom: 16,
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,
   },
   backButton: {
     padding: 8,

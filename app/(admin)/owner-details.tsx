@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Platform,
   StatusBar,
   ActivityIndicator,
@@ -129,18 +128,18 @@ export default function OwnerDetailsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#8B5CF6" />
           <Text style={styles.loadingText}>Loading owner details...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!data) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
           <Text style={styles.errorText}>Owner not found</Text>
@@ -148,13 +147,13 @@ export default function OwnerDetailsScreen() {
             <Text style={styles.backButtonAltText}>Go Back</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#8B5CF6" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -281,7 +280,7 @@ export default function OwnerDetailsScreen() {
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -296,8 +295,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#8B5CF6',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16,
+    paddingBottom: 16,
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,
   },
   backButton: {
     padding: 8,

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   TextInput,
   Platform,
   StatusBar,
@@ -193,8 +192,8 @@ export default function OwnersScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#8B5CF6" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -367,7 +366,7 @@ export default function OwnersScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -382,8 +381,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#8B5CF6',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16,
+    paddingBottom: 16,
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,
   },
   backButton: {
     padding: 8,
