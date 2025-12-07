@@ -110,7 +110,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.welcomeText}>Welcome, Admin 👑</Text>
+          <Text style={styles.welcomeText}>Welcome, Admin</Text>
           <Text style={styles.subtitle}>Super Admin Dashboard</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>

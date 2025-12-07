@@ -183,7 +183,7 @@ export default function MyPGPage() {
 
             <TouchableOpacity 
               style={styles.detailRow}
-              onPress={() => setShowCheckInPicker(true)}
+              onPress={() => setShowCheckInPicker(!showCheckInPicker)}
             >
               <View style={styles.detailRowLeft}>
                 <Ionicons name="calendar-outline" size={20} color="#0F2925" />
@@ -193,33 +193,44 @@ export default function MyPGPage() {
                 <Text style={styles.detailRowValue}>
                   {formatDate(customer.move_in_date)}
                 </Text>
-                <Ionicons name="chevron-forward" size={16} color="#0F2925" />
+                <Ionicons name={showCheckInPicker ? "chevron-down" : "chevron-forward"} size={16} color="#0F2925" />
               </View>
             </TouchableOpacity>
             
             {showCheckInPicker && (
-              <DateTimePicker
-                value={customer.move_in_date ? new Date(customer.move_in_date) : new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                minimumDate={new Date()}
-                onChange={async (event, date) => {
-                  setShowCheckInPicker(Platform.OS === 'ios');
-                  if (date && customer.id) {
-                    setEditingCheckIn(true);
-                    try {
-                      await api.updateCheckInDate(customer.id, date.toISOString().split('T')[0]);
-                      // Reload booking info to reflect changes
-                      loadBookingInfo();
-                      Alert.alert('Success', 'Check-in date updated!');
-                    } catch (error) {
-                      Alert.alert('Error', 'Failed to update check-in date');
-                    } finally {
-                      setEditingCheckIn(false);
+              <View>
+                <DateTimePicker
+                  value={customer.move_in_date ? new Date(customer.move_in_date) : new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  minimumDate={new Date()}
+                  onChange={async (event, date) => {
+                    if (Platform.OS !== 'ios') {
+                      setShowCheckInPicker(false);
                     }
-                  }
-                }}
-              />
+                    if (event.type === 'set' && date && customer.id) {
+                      setEditingCheckIn(true);
+                      try {
+                        await api.updateCheckInDate(customer.id, date.toISOString().split('T')[0]);
+                        loadBookingInfo();
+                        Alert.alert('Success', 'Check-in date updated!');
+                      } catch (error) {
+                        Alert.alert('Error', 'Failed to update check-in date');
+                      } finally {
+                        setEditingCheckIn(false);
+                      }
+                    }
+                  }}
+                />
+                {Platform.OS === 'ios' && (
+                  <TouchableOpacity 
+                    style={styles.datePickerDoneButton}
+                    onPress={() => setShowCheckInPicker(false)}
+                  >
+                    <Text style={styles.datePickerDoneText}>Done</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
 
             <View style={styles.detailDivider} />
@@ -679,6 +690,19 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#f44336',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  datePickerDoneButton: {
+    alignSelf: 'center',
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+    backgroundColor: '#0F2925',
+    borderRadius: 20,
+    marginTop: 10,
+  },
+  datePickerDoneText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },

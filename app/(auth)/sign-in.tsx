@@ -218,7 +218,13 @@ export default function SignIn() {
 
         {/* Google Sign-In */}
         <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
-          <Text style={styles.googleButtonText}>Continue with Google</Text>
+          <View style={styles.googleButtonContent}>
+            <Image 
+              source={{ uri: 'https://www.google.com/favicon.ico' }} 
+              style={styles.googleIcon} 
+            />
+            <Text style={styles.googleButtonText}>Continue with Google</Text>
+          </View>
         </TouchableOpacity>
 
         {/* Sign Up Link */}
@@ -380,6 +386,15 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     marginTop: 12,
     marginBottom: 24,
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 10,
   },
   googleButtonText: {
     color: '#000',
