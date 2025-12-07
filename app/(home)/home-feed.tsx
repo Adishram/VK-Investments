@@ -435,7 +435,7 @@ export default function HomeFeed() {
       />
 
       {/* Main Content */}
-      <View style={[styles.scrollContent, { paddingTop: Platform.OS === 'android' ? 50 : 60 }]}>
+      <View style={[styles.scrollContent, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 50 }]}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           refreshControl={

@@ -8,8 +8,8 @@ import {
   ImageBackground,
   Dimensions,
   ActivityIndicator,
-  SafeAreaView,
   Platform,
+  StatusBar,
   Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -356,6 +356,7 @@ export default function MyPGPage() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       
       {/* Background Gradient */}
       <LinearGradient
@@ -363,9 +364,9 @@ export default function MyPGPage() {
         style={StyleSheet.absoluteFillObject}
       />
 
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.safeArea}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 10 }]}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="chevron-back" size={28} color="#fff" />
           </TouchableOpacity>
@@ -404,7 +405,7 @@ export default function MyPGPage() {
 
           <View style={{ height: 40 }} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
