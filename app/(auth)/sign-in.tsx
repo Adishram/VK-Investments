@@ -11,16 +11,20 @@ import {
   ScrollView,
   Alert,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { useSignIn, useAuth, useClerk } from '@clerk/clerk-expo';
 import { useRouter, Link } from 'expo-router';
+import { useOwner } from '../../context/OwnerContext';
+import api from '../../utils/api';
 
 export default function SignIn() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const { isSignedIn, signOut } = useAuth();
   const router = useRouter();
+  const { login: ownerLogin } = useOwner();
 
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [loginType, setLoginType] = useState<'user' | 'owner'>('user');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -36,12 +40,19 @@ export default function SignIn() {
   const [passwordError, setPasswordError] = useState('');
   const [generalError, setGeneralError] = useState('');
 
-  // Auto-redirect if already signed in
+  // Auto-redirect if already signed in (only for users)
   useEffect(() => {
-    if (isSignedIn) {
+    if (isSignedIn && loginType === 'user') {
       router.replace('/(home)/home-feed');
     }
-  }, [isSignedIn]);
+  }, [isSignedIn, loginType]);
+
+  // Clear errors when switching login type
+  useEffect(() => {
+    setGeneralError('');
+    setEmailError('');
+    setPasswordError('');
+  }, [loginType]);
 
   // Clear errors when user types
   useEffect(() => {
@@ -77,8 +88,31 @@ export default function SignIn() {
     return isValid;
   };
 
-  // Handle login - Two-step: Password first, then Email code
-  const handleLogin = async () => {
+  // Handle PG Owner Login
+  const handleOwnerLogin = async () => {
+    if (!validateFields()) return;
+
+    setLoading(true);
+    setGeneralError('');
+
+    try {
+      const result = await api.ownerLogin(email, password);
+      
+      if (result.success && result.owner) {
+        await ownerLogin(result.owner);
+        router.replace('/(owner)');
+      } else {
+        setGeneralError('Invalid credentials');
+      }
+    } catch (error: any) {
+      setGeneralError(error.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle User login - Two-step: Password first, then Email code
+  const handleUserLogin = async () => {
     if (!signIn || !isLoaded) return;
     
     if (!validateFields()) {
@@ -134,6 +168,15 @@ export default function SignIn() {
       setGeneralError(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Main login handler - routes to user or owner login
+  const handleLogin = () => {
+    if (loginType === 'owner') {
+      handleOwnerLogin();
+    } else {
+      handleUserLogin();
     }
   };
 
@@ -309,14 +352,18 @@ export default function SignIn() {
 
         {/* User Type Toggle */}
         <View style={styles.tabContainer}>
-          <TouchableOpacity style={[styles.tab, styles.activeTab]}>
-            <Text style={[styles.tabText, styles.activeTabText]}>User Login</Text>
+          <TouchableOpacity 
+            style={[styles.tab, loginType === 'user' && styles.activeTab]}
+            onPress={() => setLoginType('user')}
+          >
+            <Text style={[styles.tabText, loginType === 'user' && styles.activeTabText]}>User Login</Text>
           </TouchableOpacity>
-          <Link href="/(auth)/owner-login" asChild>
-            <TouchableOpacity style={styles.tab}>
-              <Text style={styles.tabText}>PG Owner</Text>
-            </TouchableOpacity>
-          </Link>
+          <TouchableOpacity 
+            style={[styles.tab, loginType === 'owner' && styles.activeTab]}
+            onPress={() => setLoginType('owner')}
+          >
+            <Text style={[styles.tabText, loginType === 'owner' && styles.activeTabText]}>PG Owner</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Email Input */}
@@ -359,26 +406,34 @@ export default function SignIn() {
           onPress={handleLogin}
           disabled={loading}
         >
-          <Text style={styles.loginButtonText}>{loading ? 'Verifying...' : 'Login'}</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.loginButtonText}>{loginType === 'owner' ? 'Login as Owner' : 'Login'}</Text>
+          )}
         </TouchableOpacity>
 
-        {/* Google Sign-In */}
-        <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
-          <View style={styles.googleButtonContent}>
-            <Image 
-              source={{ uri: 'https://www.google.com/favicon.ico' }} 
-              style={styles.googleIcon} 
-            />
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Sign Up Link */}
-        <Link href="/(auth)/sign-up" asChild>
-          <TouchableOpacity style={styles.signupLink}>
-            <Text style={styles.signupLinkText}>New user? Sign up here</Text>
+        {/* Google Sign-In - Only for User login */}
+        {loginType === 'user' && (
+          <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
+            <View style={styles.googleButtonContent}>
+              <Image 
+                source={{ uri: 'https://www.google.com/favicon.ico' }} 
+                style={styles.googleIcon} 
+              />
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </View>
           </TouchableOpacity>
-        </Link>
+        )}
+
+        {/* Sign Up Link - Only for User login */}
+        {loginType === 'user' && (
+          <Link href="/(auth)/sign-up" asChild>
+            <TouchableOpacity style={styles.signupLink}>
+              <Text style={styles.signupLinkText}>New user? Sign up here</Text>
+            </TouchableOpacity>
+          </Link>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -557,7 +612,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   ownerButton: {
-    backgroundColor: '#fff',
+    backgroundColor: '#10B981',
     borderRadius: 25,
     padding: 18,
     alignItems: 'center',
