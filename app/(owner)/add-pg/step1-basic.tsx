@@ -138,7 +138,7 @@ function Step1Content() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#10B981" />
+      <StatusBar barStyle="light-content" backgroundColor="#4B5563" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -290,17 +290,7 @@ function Step1Content() {
                 onChangeText={(text) => updateFormData({ mobile: text })}
               />
             </View>
-            <View style={styles.inputHalf}>
-              <Text style={styles.inputLabel}>No of Rooms *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="No of Rooms"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="number-pad"
-                value={formData.noOfRooms}
-                onChangeText={(text) => updateFormData({ noOfRooms: text })}
-              />
-            </View>
+            <View style={styles.inputHalf} />
           </View>
 
           {/* Row 6 */}
@@ -517,7 +507,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,

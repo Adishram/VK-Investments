@@ -156,7 +156,7 @@ export default function MyListingsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#10B981" />
+      <StatusBar barStyle="light-content" backgroundColor="#4B5563" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#10B981',
     marginHorizontal: 16,
-    marginTop: -20,
+    marginTop: 16,
     marginBottom: 16,
     padding: 16,
     borderRadius: 16,
