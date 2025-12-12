@@ -162,7 +162,7 @@ export default function AvailabilityScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#10B981" />
+      <StatusBar barStyle="light-content" backgroundColor="#4B5563" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   searchContainer: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
     paddingHorizontal: 16,
     paddingBottom: 16,
   },

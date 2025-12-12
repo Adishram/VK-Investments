@@ -78,7 +78,7 @@ export default function PaymentsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#F59E0B" />
+      <StatusBar barStyle="light-content" backgroundColor="#4B5563" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#4B5563',
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,

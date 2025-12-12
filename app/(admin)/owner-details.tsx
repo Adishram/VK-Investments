@@ -153,7 +153,7 @@ export default function OwnerDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#8B5CF6" />
+      <StatusBar barStyle="light-content" backgroundColor="#4B5563" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#4B5563',
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#4B5563',
     borderRadius: 25,
   },
   backButtonAltText: {

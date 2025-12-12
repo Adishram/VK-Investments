@@ -63,7 +63,7 @@ function AddPGContent() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#10B981" />
+      <StatusBar barStyle="light-content" backgroundColor="#4B5563" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,
@@ -158,10 +158,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   stepCircleActive: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
   },
   stepCircleCompleted: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
   },
   stepNumber: {
     fontSize: 14,
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   stepLineActive: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
   },
   progressBar: {
     height: 4,
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
     borderRadius: 2,
   },
   content: {
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   startButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
     paddingHorizontal: 28,
     paddingVertical: 16,
     borderRadius: 30,

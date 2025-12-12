@@ -121,7 +121,7 @@ export default function AnnouncementsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#EF4444" />
+      <StatusBar barStyle="light-content" backgroundColor="#4B5563" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#EF4444',
+    backgroundColor: '#4B5563',
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#EF4444',
+    backgroundColor: '#4B5563',
     paddingVertical: 14,
     borderRadius: 12,
   },

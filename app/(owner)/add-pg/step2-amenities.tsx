@@ -118,7 +118,7 @@ function Step2Content() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#10B981" />
+      <StatusBar barStyle="light-content" backgroundColor="#4B5563" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,
@@ -258,10 +258,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   stepCircleActive: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
   },
   stepCircleCompleted: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
   },
   stepNumber: {
     fontSize: 12,
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   stepLineActive: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
   },
   progressBar: {
     height: 4,
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
     borderRadius: 2,
   },
   scrollView: {
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxSelected: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
     borderColor: '#10B981',
   },
   amenityLabel: {
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 16,
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
     borderRadius: 14,
   },
   continueBtnText: {

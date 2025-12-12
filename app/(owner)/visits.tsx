@@ -171,7 +171,7 @@ export default function VisitsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#8B5CF6" />
+      <StatusBar barStyle="light-content" backgroundColor="#4B5563" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#4B5563',
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 16,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   filterTabActive: {
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#4B5563',
   },
   filterText: {
     fontSize: 14,
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#10B981',
+    backgroundColor: '#4B5563',
   },
   approveBtnText: {
     fontSize: 14,
