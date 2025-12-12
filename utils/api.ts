@@ -407,6 +407,34 @@ export const api = {
     return response.json();
   },
 
+  // Get Owner Profile
+  async getOwnerProfile(ownerId: number): Promise<{
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    mobile: string;
+    city: string;
+    address: string;
+    dob: string;
+    profilePicture: string | null;
+  }> {
+    const response = await fetch(`${API_URL}/owner/${ownerId}`);
+    if (!response.ok) throw new Error('Failed to fetch owner profile');
+    return response.json();
+  },
+
+  // Upload Owner Profile Image
+  async uploadOwnerImage(ownerId: number, base64Image: string): Promise<{ message: string; profilePicture: string }> {
+    const response = await fetch(`${API_URL}/owner/${ownerId}/image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64Image }),
+    });
+    if (!response.ok) throw new Error('Failed to upload image');
+    return response.json();
+  },
+
   // Get Owner Stats
   async getOwnerStats(ownerId: number): Promise<{
     totalPGs: number;

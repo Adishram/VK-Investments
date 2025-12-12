@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,13 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useOwner } from '../../context/OwnerContext';
 import api from '../../utils/api';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -26,6 +28,58 @@ export default function SettingsScreen() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Load profile picture on mount
+  useEffect(() => {
+    if (owner?.id) {
+      loadOwnerProfile();
+    }
+  }, [owner?.id]);
+
+  const loadOwnerProfile = async () => {
+    try {
+      const profile = await api.getOwnerProfile(owner!.id);
+      if (profile.profilePicture) {
+        setProfilePicture(profile.profilePicture);
+      }
+    } catch (error) {
+      console.log('Could not load profile picture');
+    }
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Required', 'Please allow access to your photo library.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0].base64) {
+        setUploadingImage(true);
+        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        
+        // Upload to backend
+        await api.uploadOwnerImage(owner!.id, base64Image);
+        setProfilePicture(base64Image);
+        Alert.alert('Success', 'Profile picture updated!');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update profile picture');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleChangePassword = async () => {
     if (!currentPassword.trim()) {
@@ -70,7 +124,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             await logout();
-            router.replace('/(auth)/owner-login');
+            router.replace('/(auth)/sign-in');
           },
         },
       ]
@@ -93,14 +147,24 @@ export default function SettingsScreen() {
       <ScrollView style={styles.scrollView}>
         {/* Profile Info */}
         <View style={styles.profileCard}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {owner?.name?.charAt(0).toUpperCase() || 'O'}
-            </Text>
-          </View>
+          <TouchableOpacity style={styles.avatarContainer} onPress={handlePickImage} disabled={uploadingImage}>
+            {uploadingImage ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : profilePicture ? (
+              <Image source={{ uri: profilePicture }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>
+                {owner?.name?.charAt(0).toUpperCase() || 'O'}
+              </Text>
+            )}
+            <View style={styles.editBadge}>
+              <Ionicons name="camera" size={12} color="#fff" />
+            </View>
+          </TouchableOpacity>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{owner?.name || 'Owner'}</Text>
             <Text style={styles.profileEmail}>{owner?.email}</Text>
+            <Text style={styles.tapToChange}>Tap photo to change</Text>
           </View>
         </View>
 
@@ -283,8 +347,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
+  avatarImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#6B7280',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
   profileInfo: {
     marginLeft: 16,
+    flex: 1,
   },
   profileName: {
     fontSize: 20,
@@ -295,6 +378,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     marginTop: 2,
+  },
+  tapToChange: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 4,
   },
   sectionTitle: {
     fontSize: 16,
