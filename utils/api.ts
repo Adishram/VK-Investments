@@ -386,11 +386,142 @@ export const api = {
   },
 
   // Notify Customers for Payment
-  async notifyPayment(): Promise<{ message: string }> {
+  async notifyPayment(): Promise<{ message: string; announcementsCreated: number; emailsSent: number }> {
     const response = await fetch(`${API_URL}/super-admin/notify-payment`, {
       method: 'POST',
     });
     if (!response.ok) throw new Error('Failed to send notifications');
+    return response.json();
+  },
+
+  // ==================== OWNER APIs ====================
+
+  // Owner Login
+  async ownerLogin(email: string, password: string): Promise<{ success: boolean; owner?: any }> {
+    const response = await fetch(`${API_URL}/owner/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!response.ok) throw new Error('Invalid credentials');
+    return response.json();
+  },
+
+  // Get Owner Stats
+  async getOwnerStats(ownerId: number): Promise<{
+    totalPGs: number;
+    totalCustomers: number;
+    totalEarnings: number;
+    pendingPayments: number;
+    paidPayments: number;
+  }> {
+    const response = await fetch(`${API_URL}/owner/${ownerId}/stats`);
+    if (!response.ok) throw new Error('Failed to fetch owner stats');
+    return response.json();
+  },
+
+  // Get Owner's PGs
+  async getOwnerPGs(ownerId: number): Promise<any[]> {
+    const response = await fetch(`${API_URL}/pg?owner_id=${ownerId}`);
+    if (!response.ok) throw new Error('Failed to fetch PGs');
+    return response.json();
+  },
+
+  // Get Owner's Guests/Customers
+  async getOwnerGuests(ownerId: number): Promise<any[]> {
+    const response = await fetch(`${API_URL}/owner/${ownerId}/guests`);
+    if (!response.ok) throw new Error('Failed to fetch guests');
+    return response.json();
+  },
+
+  // Update Guest Room/Floor
+  async updateGuestRoom(guestId: number, roomNo: string, floor: string): Promise<any> {
+    const response = await fetch(`${API_URL}/owner/guest/${guestId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room_no: roomNo, floor }),
+    });
+    if (!response.ok) throw new Error('Failed to update guest');
+    return response.json();
+  },
+
+  // Get Owner's Visits
+  async getOwnerVisits(ownerId: number): Promise<any[]> {
+    const response = await fetch(`${API_URL}/owner/${ownerId}/visits`);
+    if (!response.ok) throw new Error('Failed to fetch visits');
+    return response.json();
+  },
+
+  // Approve Visit
+  async approveVisit(visitId: number): Promise<any> {
+    const response = await fetch(`${API_URL}/visit-request/${visitId}/approve`, {
+      method: 'PUT',
+    });
+    if (!response.ok) throw new Error('Failed to approve visit');
+    return response.json();
+  },
+
+  // Reject Visit
+  async rejectVisit(visitId: number): Promise<any> {
+    const response = await fetch(`${API_URL}/visit-request/${visitId}/reject`, {
+      method: 'PUT',
+    });
+    if (!response.ok) throw new Error('Failed to reject visit');
+    return response.json();
+  },
+
+  // Get Owner's Payments
+  async getOwnerPayments(ownerId: number): Promise<{
+    customers: any[];
+    totalEarnings: number;
+    paidCount: number;
+    dueCount: number;
+  }> {
+    const response = await fetch(`${API_URL}/owner/${ownerId}/payments`);
+    if (!response.ok) throw new Error('Failed to fetch payments');
+    return response.json();
+  },
+
+  // Update PG
+  async updatePG(pgId: number, data: Partial<PGListing>): Promise<any> {
+    const response = await fetch(`${API_URL}/pg/${pgId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to update PG');
+    return response.json();
+  },
+
+  // Create Announcement
+  async createAnnouncement(pgId: number, ownerId: number, message: string): Promise<any> {
+    const response = await fetch(`${API_URL}/owner/announcement`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pgId, ownerId, message }),
+    });
+    if (!response.ok) throw new Error('Failed to create announcement');
+    return response.json();
+  },
+
+  // Get Announcements for a PG
+  async getAnnouncements(pgId: number): Promise<any[]> {
+    const response = await fetch(`${API_URL}/pg/${pgId}/announcements`);
+    if (!response.ok) throw new Error('Failed to fetch announcements');
+    return response.json();
+  },
+
+  // Change Owner Password
+  async changeOwnerPassword(email: string, currentPassword: string, newPassword: string): Promise<any> {
+    const response = await fetch(`${API_URL}/owner/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, currentPassword, newPassword }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to change password');
+    }
     return response.json();
   },
 };

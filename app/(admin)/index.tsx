@@ -58,7 +58,11 @@ export default function AdminDashboard() {
   const handlePaymentAlert = async () => {
     try {
       const result = await api.notifyPayment();
-      Alert.alert('Success', result.message);
+      if (result.announcementsCreated === 0 && result.emailsSent === 0) {
+        Alert.alert('No Pending Dues', 'No one has rent due yet. Payment reminders were not sent.');
+      } else {
+        Alert.alert('Success', result.message);
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to send notifications');
     }

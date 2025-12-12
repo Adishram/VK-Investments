@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   StatusBar,
   Alert,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter, Link } from 'expo-router';
@@ -21,6 +22,149 @@ import { api, PGListing } from '../../utils/api';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width } = Dimensions.get('window');
+
+// --- Skeleton Loading Component ---
+const SkeletonLoader = () => {
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const shimmer = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(shimmerAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
+      ])
+    );
+    shimmer.start();
+    return () => shimmer.stop();
+  }, []);
+
+  const opacity = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.7],
+  });
+
+  return (
+    <View style={skeletonStyles.container}>
+      {/* PG Card Skeleton */}
+      <View style={skeletonStyles.card}>
+        <Animated.View style={[skeletonStyles.image, { opacity }]} />
+        <View style={skeletonStyles.detailsSection}>
+          <Animated.View style={[skeletonStyles.title, { opacity }]} />
+          <View style={skeletonStyles.detailRow}>
+            <Animated.View style={[skeletonStyles.icon, { opacity }]} />
+            <Animated.View style={[skeletonStyles.detailText, { opacity }]} />
+          </View>
+          <View style={skeletonStyles.detailRow}>
+            <Animated.View style={[skeletonStyles.icon, { opacity }]} />
+            <Animated.View style={[skeletonStyles.detailText, { opacity }]} />
+          </View>
+          <View style={skeletonStyles.detailRow}>
+            <Animated.View style={[skeletonStyles.icon, { opacity }]} />
+            <Animated.View style={[skeletonStyles.detailText, { opacity }]} />
+          </View>
+        </View>
+      </View>
+
+      {/* Rent Card Skeleton */}
+      <View style={skeletonStyles.rentCard}>
+        <Animated.View style={[skeletonStyles.rentLabel, { opacity }]} />
+        <Animated.View style={[skeletonStyles.rentNumber, { opacity }]} />
+      </View>
+
+      {/* Announcements Skeleton */}
+      <View style={skeletonStyles.announcementSection}>
+        <Animated.View style={[skeletonStyles.sectionTitle, { opacity }]} />
+        <Animated.View style={[skeletonStyles.announcementPlaceholder, { opacity }]} />
+      </View>
+    </View>
+  );
+};
+
+const skeletonStyles = StyleSheet.create({
+  container: {
+    padding: 20,
+  },
+  card: {
+    marginBottom: 20,
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: 180,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  detailsSection: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    padding: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  title: {
+    width: '60%',
+    height: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+    marginBottom: 16,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  icon: {
+    width: 24,
+    height: 24,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+    marginRight: 12,
+  },
+  detailText: {
+    width: '50%',
+    height: 16,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+  },
+  rentCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rentLabel: {
+    width: '50%',
+    height: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+  },
+  rentNumber: {
+    width: 60,
+    height: 40,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+  },
+  announcementSection: {
+    marginTop: 8,
+  },
+  sectionTitle: {
+    width: '40%',
+    height: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+    marginBottom: 16,
+  },
+  announcementPlaceholder: {
+    width: '100%',
+    height: 100,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+  },
+});
 
 // Booking info interface
 interface BookingInfo {
@@ -104,6 +248,17 @@ export default function MyPGPage() {
         setVisitRequests(visits);
       } catch (e) {
         console.log('No visit requests');
+      }
+      
+      // Load announcements for this PG
+      if (response?.pg?.id) {
+        try {
+          const announcements = await api.getAnnouncements(response.pg.id);
+          // Store in bookingInfo or a separate state
+          setBookingInfo(prev => prev ? { ...prev, announcements } : prev);
+        } catch (e) {
+          console.log('No announcements');
+        }
       }
     } catch (error) {
       console.error('Failed to load My PG:', error);
@@ -380,10 +535,7 @@ export default function MyPGPage() {
           showsVerticalScrollIndicator={false}
         >
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#4ADE80" />
-              <Text style={styles.loadingText}>Loading your booking...</Text>
-            </View>
+            <SkeletonLoader />
           ) : bookingInfo?.hasPG ? (
             renderBookingContent()
           ) : (

@@ -91,8 +91,6 @@ export default function SharePage() {
         {/* Share Options */}
         <BlurView intensity={40} tint="dark" style={styles.shareSection}>
           <View style={styles.shareSectionInner}>
-            <Text style={styles.shareTitle}>Share with Friends</Text>
-
             <TouchableOpacity style={styles.shareOption} onPress={handleShare}>
               <View style={[styles.shareIconContainer, { backgroundColor: 'rgba(0, 122, 255, 0.2)' }]}>
                 <Ionicons name="share-outline" size={24} color="#007AFF" />

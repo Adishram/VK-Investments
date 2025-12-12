@@ -9,24 +9,40 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-
-const OWNER_CREDENTIALS = {
-  email: 'owner@bookmypg.com',
-  password: 'Owner@123',
-};
+import { useOwner } from '../../context/OwnerContext';
+import api from '../../utils/api';
 
 export default function OwnerLogin() {
   const router = useRouter();
+  const { login } = useOwner();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (email === OWNER_CREDENTIALS.email && password === OWNER_CREDENTIALS.password) {
-      router.replace('/(owner)');
-    } else {
-      alert('Invalid credentials');
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter email and password');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await api.ownerLogin(email, password);
+      
+      if (result.success && result.owner) {
+        await login(result.owner);
+        router.replace('/(owner)');
+      } else {
+        Alert.alert('Error', 'Invalid credentials');
+      }
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -44,10 +60,11 @@ export default function OwnerLogin() {
             style={styles.input}
             value={email}
             onChangeText={setEmail}
-            placeholder="owner@bookmypg.com"
+            placeholder="Enter your email"
             placeholderTextColor="#999"
             autoCapitalize="none"
             keyboardType="email-address"
+            editable={!loading}
           />
         </View>
 
@@ -60,14 +77,23 @@ export default function OwnerLogin() {
             placeholder="Enter password"
             placeholderTextColor="#999"
             secureTextEntry
+            editable={!loading}
           />
         </View>
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Login as Owner</Text>
+        <TouchableOpacity 
+          style={[styles.loginButton, loading && styles.loginButtonDisabled]} 
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.loginButtonText}>Login as Owner</Text>
+          )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.back()} disabled={loading}>
           <Text style={styles.backText}>Back to User Login</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -84,7 +110,8 @@ const styles = StyleSheet.create({
   inputContainer: { marginBottom: 20 },
   label: { fontSize: 14, color: '#666', marginBottom: 8 },
   input: { backgroundColor: '#f5f5f5', borderRadius: 12, padding: 16, fontSize: 16, color: '#000' },
-  loginButton: { backgroundColor: '#000', borderRadius: 25, padding: 18, alignItems: 'center', marginTop: 12 },
+  loginButton: { backgroundColor: '#10B981', borderRadius: 25, padding: 18, alignItems: 'center', marginTop: 12 },
+  loginButtonDisabled: { backgroundColor: '#86EFAC' },
   loginButtonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
   backText: { textAlign: 'center', marginTop: 20, color: '#666', textDecorationLine: 'underline' },
 });

@@ -414,7 +414,22 @@ export default function PGDetails() {
           <BlurView intensity={100} tint="light" style={styles.titleCard}>
             <View style={styles.titleCardInner}>
               <View style={styles.titleContent}>
-                <Text style={styles.pgTitle}>{pg.title}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={styles.pgTitle}>{pg.title}</Text>
+                  {pg.gender && (
+                    <View style={[
+                      styles.genderBadge,
+                      { backgroundColor: pg.gender === 'women' ? '#FDF2F8' : pg.gender === 'men' ? '#EFF6FF' : '#F0FDF4' }
+                    ]}>
+                      <Text style={[
+                        styles.genderText,
+                        { color: pg.gender === 'women' ? '#DB2777' : pg.gender === 'men' ? '#2563EB' : '#16A34A' }
+                      ]}>
+                        {pg.gender === 'women' ? 'Women' : pg.gender === 'men' ? 'Men' : 'Unisex'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
                 <View style={styles.locationRow}>
                   <Ionicons name="location" size={16} color="#666" />
                   <Text style={styles.locationText}>{pg.city}</Text>
@@ -455,32 +470,51 @@ export default function PGDetails() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Available Rooms</Text>
             <View style={styles.roomsGrid}>
-              {pg.occupancy_types?.map((type, index) => (
-                <View key={index} style={styles.roomCard}>
-                  <View style={styles.roomHeader}>
-                    <Text style={styles.roomType}>{type}</Text>
-                    <View style={styles.availableBadge}>
-                      <Text style={styles.availableText}>{Math.floor(Math.random() * 5) + 1} Left</Text>
+              {/* Use rooms array if available (new format), otherwise fall back to occupancy_types */}
+              {pg.rooms && Array.isArray(pg.rooms) && pg.rooms.length > 0 ? (
+                pg.rooms.map((room: any, index: number) => (
+                  <View key={index} style={styles.roomCard}>
+                    <View style={styles.roomHeader}>
+                      <Text style={styles.roomType}>{room.type}</Text>
+                      <View style={styles.availableBadge}>
+                        <Text style={styles.availableText}>{room.available || room.count} Left</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.roomDetails}>{room.isAC ? 'AC' : 'Non-AC'}</Text>
+                    <View style={styles.roomPricing}>
+                      <Text style={styles.roomPrice}>₹{room.price}/mo</Text>
+                      <Text style={styles.depositText}>Dep: ₹{room.deposit || (room.price * 2)}</Text>
                     </View>
                   </View>
-                  <Text style={styles.roomDetails}>Non-AC • Ground Floor</Text>
-                  <View style={styles.roomPricing}>
-                    <Text style={styles.roomPrice}>₹{pg.occupancy_prices?.[type] || pg.price}/mo</Text>
-                    <Text style={styles.depositText}>Dep: ₹{(pg.occupancy_prices?.[type] || pg.price) * 2}</Text>
+                ))
+              ) : pg.occupancy_types && pg.occupancy_types.length > 0 ? (
+                pg.occupancy_types.map((type, index) => (
+                  <View key={index} style={styles.roomCard}>
+                    <View style={styles.roomHeader}>
+                      <Text style={styles.roomType}>{type}</Text>
+                      <View style={styles.availableBadge}>
+                        <Text style={styles.availableText}>Available</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.roomDetails}>Non-AC</Text>
+                    <View style={styles.roomPricing}>
+                      <Text style={styles.roomPrice}>₹{pg.occupancy_prices?.[type] || pg.price}/mo</Text>
+                      <Text style={styles.depositText}>Dep: ₹{pg.safety_deposit || (pg.occupancy_prices?.[type] || pg.price) * 2}</Text>
+                    </View>
                   </View>
-                </View>
-              )) || (
+                ))
+              ) : (
                 <View style={styles.roomCard}>
                   <View style={styles.roomHeader}>
-                    <Text style={styles.roomType}>Single Sharing</Text>
+                    <Text style={styles.roomType}>Standard Room</Text>
                     <View style={styles.availableBadge}>
-                      <Text style={styles.availableText}>3 Left</Text>
+                      <Text style={styles.availableText}>Available</Text>
                     </View>
                   </View>
-                  <Text style={styles.roomDetails}>Non-AC • Ground Floor</Text>
+                  <Text style={styles.roomDetails}>Non-AC</Text>
                   <View style={styles.roomPricing}>
                     <Text style={styles.roomPrice}>₹{pg.price}/mo</Text>
-                    <Text style={styles.depositText}>Dep: ₹{pg.price * 2}</Text>
+                    <Text style={styles.depositText}>Dep: ₹{pg.safety_deposit || pg.price * 2}</Text>
                   </View>
                 </View>
               )}
@@ -966,6 +1000,15 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  genderBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  genderText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 
   // Content

@@ -10,8 +10,13 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { useSignUp } from '@clerk/clerk-expo';
+import { useSignUp, useOAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+
+// Warm up the browser for OAuth
+WebBrowser.maybeCompleteAuthSession();
 
 // Password strength requirements based on Clerk defaults
 interface PasswordRequirement {
@@ -40,13 +45,18 @@ const getPasswordStrength = (requirements: PasswordRequirement[]): { level: numb
 };
 
 export default function SignUp() {
-  const { signUp, setActive } = useSignUp();
+  const { signUp, setActive, isLoaded } = useSignUp();
+  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
   const router = useRouter();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Verification state
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
   
   // Error states
   const [nameError, setNameError] = useState('');
@@ -106,12 +116,29 @@ export default function SignUp() {
     return isValid;
   };
 
+  // Handle Google Sign Up
+  const handleGoogleSignUp = async () => {
+    try {
+      const { createdSessionId, setActive: setActiveSession } = await startOAuthFlow({
+        redirectUrl: Linking.createURL('/(home)/home-feed'),
+      });
+
+      if (createdSessionId && setActiveSession) {
+        await setActiveSession({ session: createdSessionId });
+        router.replace('/(home)/home-feed');
+      }
+    } catch (err: any) {
+      console.error('Google sign-up error:', err);
+      setGeneralError(err.errors?.[0]?.message || 'Google sign-up failed. Please try again.');
+    }
+  };
+
   const handleSignUp = async () => {
     if (!validateFields()) {
       return;
     }
 
-    if (!signUp) return;
+    if (!signUp || !isLoaded) return;
     setLoading(true);
     setGeneralError('');
 
@@ -123,18 +150,11 @@ export default function SignUp() {
         lastName: name.split(' ').slice(1).join(' '),
       });
 
+      // Send verification code to email
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       
-      // For now, just complete without verification
-      // In production, you'd navigate to verification screen
-      const result = await signUp.attemptEmailAddressVerification({
-        code: '424242', // Clerk test code
-      });
-
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
-        router.replace('/(home)/home-feed');
-      }
+      // Show verification code input
+      setPendingVerification(true);
     } catch (err: any) {
       console.error('Error:', err);
       const errorMessage = err.errors?.[0]?.message || 'Sign up failed. Please try again.';
@@ -143,6 +163,109 @@ export default function SignUp() {
       setLoading(false);
     }
   };
+
+  // Handle verification code submission
+  const handleVerifyEmail = async () => {
+    if (!signUp || !isLoaded) return;
+    setLoading(true);
+    setGeneralError('');
+
+    try {
+      const completeSignUp = await signUp.attemptEmailAddressVerification({
+        code: verificationCode,
+      });
+
+      if (completeSignUp.status === 'complete') {
+        await setActive({ session: completeSignUp.createdSessionId });
+        router.replace('/(home)/home-feed');
+      } else {
+        setGeneralError('Verification incomplete. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('Verification error:', err);
+      const errorMessage = err.errors?.[0]?.message || 'Invalid verification code. Please try again.';
+      setGeneralError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend verification code
+  const handleResendCode = async () => {
+    if (!signUp) return;
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      setGeneralError('');
+    } catch (err: any) {
+      setGeneralError('Failed to resend code. Please try again.');
+    }
+  };
+
+  // Verification Code Screen
+  if (pendingVerification) {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Image
+            source={require('../../assets/images/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+
+          <Text style={styles.welcome}>Verify Your Email</Text>
+          <Text style={styles.subtitle}>
+            We've sent a verification code to{'\n'}
+            <Text style={{ fontWeight: '600', color: '#000' }}>{email}</Text>
+          </Text>
+
+          {generalError ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>⚠️ {generalError}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Verification Code</Text>
+            <TextInput
+              style={styles.input}
+              value={verificationCode}
+              onChangeText={setVerificationCode}
+              placeholder="Enter 6-digit code"
+              placeholderTextColor="#999"
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.signupButton, loading && styles.signupButtonDisabled]}
+            onPress={handleVerifyEmail}
+            disabled={loading || verificationCode.length < 6}
+          >
+            <Text style={styles.signupButtonText}>{loading ? 'Verifying...' : 'Verify Email'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.resendButton} onPress={handleResendCode}>
+            <Text style={styles.resendButtonText}>Didn't receive the code? Resend</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => {
+              setPendingVerification(false);
+              setVerificationCode('');
+            }}
+          >
+            <Text style={styles.backButtonText}>← Back to Sign Up</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -177,6 +300,24 @@ export default function SignUp() {
           <TouchableOpacity style={[styles.tab, styles.activeTab]}>
             <Text style={[styles.tabText, styles.activeTabText]}>Sign up</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Google Sign Up Button */}
+        <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignUp}>
+          <View style={styles.googleButtonContent}>
+            <Image 
+              source={{ uri: 'https://www.google.com/favicon.ico' }} 
+              style={styles.googleIcon} 
+            />
+            <Text style={styles.googleButtonText}>Sign up with Google</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Divider */}
+        <View style={styles.dividerContainer}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
         </View>
 
         {/* Name Input */}
@@ -283,10 +424,10 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   logo: {
-    width: 180,
-    height: 180,
+    width: 140,
+    height: 140,
     alignSelf: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   welcome: {
     fontSize: 28,
@@ -300,6 +441,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#666',
     marginBottom: 16,
+    lineHeight: 20,
   },
   errorContainer: {
     backgroundColor: '#FFEBEE',
@@ -344,6 +486,44 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#000',
     fontWeight: '600',
+  },
+  googleButton: {
+    backgroundColor: '#fff',
+    borderRadius: 25,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 16,
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 10,
+  },
+  googleButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  dividerText: {
+    paddingHorizontal: 16,
+    color: '#999',
+    fontSize: 14,
   },
   inputContainer: {
     marginBottom: 14,
@@ -428,4 +608,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  resendButton: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  resendButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  backButton: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  backButtonText: {
+    color: '#666',
+    fontSize: 14,
+  },
 });
+

@@ -98,14 +98,33 @@ export default function OwnersScreen() {
     try {
       setSubmitting(true);
       const result = await api.addOwner(formData);
+      
+      // Import clipboard dynamically
+      const Clipboard = require('expo-clipboard');
+      
       Alert.alert(
-        'Success',
+        'Success ✓',
         `Owner "${result.owner.name}" added successfully!\n\nGenerated Password: ${result.generatedPassword}\n\nCredentials have been sent via email.`,
-        [{ text: 'OK', onPress: () => {
-          setModalVisible(false);
-          setFormData({ name: '', email: '', mobile: '', city: '', state: '' });
-          loadData();
-        }}]
+        [
+          { 
+            text: 'Copy Password', 
+            onPress: () => {
+              Clipboard.setStringAsync(result.generatedPassword);
+              Alert.alert('Copied!', 'Password copied to clipboard');
+              setModalVisible(false);
+              setFormData({ name: '', email: '', mobile: '', city: '', state: '' });
+              loadData();
+            }
+          },
+          { 
+            text: 'OK', 
+            onPress: () => {
+              setModalVisible(false);
+              setFormData({ name: '', email: '', mobile: '', city: '', state: '' });
+              loadData();
+            }
+          }
+        ]
       );
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to add owner');

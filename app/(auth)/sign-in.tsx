@@ -12,12 +12,12 @@ import {
   Alert,
   Pressable,
 } from 'react-native';
-import { useSignIn, useAuth } from '@clerk/clerk-expo';
+import { useSignIn, useAuth, useClerk } from '@clerk/clerk-expo';
 import { useRouter, Link } from 'expo-router';
 
 export default function SignIn() {
-  const { signIn, setActive } = useSignIn();
-  const { isSignedIn } = useAuth();
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const { isSignedIn, signOut } = useAuth();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
@@ -26,6 +26,10 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [logoTapCount, setLogoTapCount] = useState(0);
+  
+  // Verification state
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
   
   // Error states
   const [emailError, setEmailError] = useState('');
@@ -73,9 +77,9 @@ export default function SignIn() {
     return isValid;
   };
 
-  // Handle login
+  // Handle login - Two-step: Password first, then Email code
   const handleLogin = async () => {
-    if (!signIn) return;
+    if (!signIn || !isLoaded) return;
     
     if (!validateFields()) {
       return;
@@ -85,21 +89,99 @@ export default function SignIn() {
     setGeneralError('');
 
     try {
+      // Step 1: Create sign-in and validate password
       const signInAttempt = await signIn.create({
         identifier: email,
-        password,
       });
 
-      if (signInAttempt.status === 'complete') {
-        await setActive({ session: signInAttempt.createdSessionId });
-        router.replace('/(home)/home-feed');
+      // Step 2: Attempt password verification
+      const passwordResult = await signIn.attemptFirstFactor({
+        strategy: 'password',
+        password: password,
+      });
+
+      // Step 3: Password is correct - now send email verification code
+      if (passwordResult.status === 'complete' || passwordResult.status === 'needs_second_factor') {
+        // Password verified! Sign out to clear the session before email verification
+        await signOut();
+        
+        // Create a fresh sign-in for email code
+        const emailSignIn = await signIn.create({
+          identifier: email,
+        });
+
+        // Find email_code factor
+        const emailCodeFactor = emailSignIn.supportedFirstFactors?.find(
+          (factor: any) => factor.strategy === 'email_code'
+        );
+
+        if (emailCodeFactor && 'emailAddressId' in emailCodeFactor) {
+          // Send email verification code
+          await signIn.prepareFirstFactor({
+            strategy: 'email_code',
+            emailAddressId: emailCodeFactor.emailAddressId,
+          });
+          
+          // Show verification screen
+          setPendingVerification(true);
+        } else {
+          setGeneralError('Email verification not available for this account.');
+        }
       }
     } catch (err: any) {
-      console.error('Error:', err);
+      console.error('Sign-in error:', err);
       const errorMessage = err.errors?.[0]?.message || 'Invalid email or password. Please try again.';
       setGeneralError(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle verification code submission
+  const handleVerifyEmail = async () => {
+    if (!signIn || !isLoaded) return;
+    setLoading(true);
+    setGeneralError('');
+
+    try {
+      const completeSignIn = await signIn.attemptFirstFactor({
+        strategy: 'email_code',
+        code: verificationCode,
+      });
+
+      if (completeSignIn.status === 'complete') {
+        await setActive({ session: completeSignIn.createdSessionId });
+        router.replace('/(home)/home-feed');
+      } else {
+        setGeneralError('Verification incomplete. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('Verification error:', err);
+      const errorMessage = err.errors?.[0]?.message || 'Invalid verification code. Please try again.';
+      setGeneralError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend verification code
+  const handleResendCode = async () => {
+    if (!signIn) return;
+    try {
+      const emailFactor = signIn.supportedFirstFactors?.find(
+        (factor: any) => factor.strategy === 'email_code'
+      );
+      
+      if (emailFactor && 'emailAddressId' in emailFactor) {
+        await signIn.prepareFirstFactor({
+          strategy: 'email_code',
+          emailAddressId: emailFactor.emailAddressId,
+        });
+        setGeneralError('');
+        Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
+      }
+    } catch (err: any) {
+      setGeneralError('Failed to resend code. Please try again.');
     }
   };
 
@@ -130,6 +212,75 @@ export default function SignIn() {
     // Reset counter after 2 seconds of inactivity
     setTimeout(() => setLogoTapCount(0), 2000);
   };
+
+  // Verification Code Screen
+  if (pendingVerification) {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
+
+          <Text style={styles.welcome}>Verify Your Email</Text>
+          <Text style={styles.subtitle}>
+            We've sent a verification code to{'\n'}
+            <Text style={{ fontWeight: '600', color: '#000' }}>{email}</Text>
+          </Text>
+
+          {generalError ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>⚠️ {generalError}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Verification Code</Text>
+            <TextInput
+              style={styles.input}
+              value={verificationCode}
+              onChangeText={setVerificationCode}
+              placeholder="Enter 6-digit code"
+              placeholderTextColor="#999"
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+            onPress={handleVerifyEmail}
+            disabled={loading || verificationCode.length < 6}
+          >
+            <Text style={styles.loginButtonText}>{loading ? 'Verifying...' : 'Verify Email'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.resendButton} onPress={handleResendCode}>
+            <Text style={styles.resendButtonText}>Didn't receive the code? Resend</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => {
+              setPendingVerification(false);
+              setVerificationCode('');
+              setGeneralError('');
+            }}
+          >
+            <Text style={styles.backButtonText}>← Back to Login</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -202,18 +353,13 @@ export default function SignIn() {
           {passwordError ? <Text style={styles.fieldError}>{passwordError}</Text> : null}
         </View>
 
-        {/* Forgot Password */}
-        <TouchableOpacity style={styles.forgotPassword}>
-          <Text style={styles.forgotPasswordText}>Forgot Password</Text>
-        </TouchableOpacity>
-
         {/* Login Button */}
         <TouchableOpacity
           style={[styles.loginButton, loading && styles.loginButtonDisabled]}
           onPress={handleLogin}
           disabled={loading}
         >
-          <Text style={styles.loginButtonText}>{loading ? 'Loading...' : 'Login'}</Text>
+          <Text style={styles.loginButtonText}>{loading ? 'Verifying...' : 'Login'}</Text>
         </TouchableOpacity>
 
         {/* Google Sign-In */}
@@ -423,4 +569,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  // Verification screen styles
+  subtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  resendButton: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  resendButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  backButton: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  backButtonText: {
+    color: '#666',
+    fontSize: 14,
+  },
 });
+

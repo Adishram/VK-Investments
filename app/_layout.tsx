@@ -1,6 +1,7 @@
 import { Slot } from 'expo-router';
 import { ClerkProvider } from '@clerk/clerk-expo';
 import * as SecureStore from 'expo-secure-store';
+import { OwnerProvider } from '../context/OwnerContext';
 
 const tokenCache = {
   async getToken(key: string) {
@@ -28,7 +29,9 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <Slot />
+      <OwnerProvider>
+        <Slot />
+      </OwnerProvider>
     </ClerkProvider>
   );
 }
