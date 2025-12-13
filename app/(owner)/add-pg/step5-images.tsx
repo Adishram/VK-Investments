@@ -191,7 +191,6 @@ function Step5Content() {
         description: formData.description,
         price: minPrice,
         location: formData.locality || formData.city,
-        house_no: '',
         street: formData.address,
         city: formData.city,
         pincode: '',

@@ -10,12 +10,11 @@ export interface PGListing {
   description: string;
   price: number;
   location: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   image_url: string;
   images?: string[];
   owner_contact: string;
-  house_no: string;
   street: string;
   city: string;
   pincode: string;
