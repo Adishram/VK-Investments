@@ -99,7 +99,7 @@ export default function AnnouncementsScreen() {
 
     try {
       setSending(true);
-      await api.createAnnouncement(selectedPG.id, owner.id, message);
+      await api.createAnnouncement(selectedPG.id, owner.email, message);
       Alert.alert('Success', 'Announcement sent to all customers of this PG!');
       setMessage('');
       loadAnnouncements(selectedPG.id);

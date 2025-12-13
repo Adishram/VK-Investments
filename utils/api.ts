@@ -521,11 +521,11 @@ export const api = {
   },
 
   // Create Announcement
-  async createAnnouncement(pgId: number, ownerId: number, message: string): Promise<any> {
+  async createAnnouncement(pgId: number, ownerEmail: string, message: string): Promise<any> {
     const response = await fetch(`${API_URL}/owner/announcement`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pgId, ownerId, message }),
+      body: JSON.stringify({ pgId, ownerEmail, message }),
     });
     if (!response.ok) throw new Error('Failed to create announcement');
     return response.json();
