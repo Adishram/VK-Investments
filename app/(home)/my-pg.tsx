@@ -517,9 +517,9 @@ export default function MyPGPage() {
           </View>
         )}
 
-        {/* Scheduled Visits Section - Now on top */}
+        {/* Scheduled Visits Section */}
         {visitRequests.length > 0 && (
-          <View style={styles.announcementsSection}>
+          <View style={[styles.announcementsSection, { marginTop: 24 }]}>
             <Text style={styles.sectionTitle}>Scheduled Visits</Text>
             {visitRequests.map((visit, index) => (
               <TouchableOpacity
@@ -566,31 +566,35 @@ export default function MyPGPage() {
         {/* Announcements Section */}
         <View style={styles.announcementsSection}>
           <Text style={styles.sectionTitle}>Announcements</Text>
-          {(bookingInfo as any)?.announcements && (bookingInfo as any).announcements.length > 0 ? (
-            (bookingInfo as any).announcements.map((announcement: any, index: number) => (
-              <View key={announcement.id || index} style={styles.announcementCard}>
-                <View style={styles.announcementHeader}>
-                  <Ionicons name="megaphone" size={18} color="#4ADE80" />
-                  <Text style={styles.announcementDate}>
-                    {new Date(announcement.created_at).toLocaleDateString('en-IN', {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+          <BlurView intensity={60} tint="dark" style={styles.announcementsCardContainer}>
+            <View style={styles.announcementsCardInner}>
+              {(bookingInfo as any)?.announcements && (bookingInfo as any).announcements.length > 0 ? (
+                (bookingInfo as any).announcements.map((announcement: any, index: number) => (
+                  <View key={announcement.id || index} style={styles.announcementCard}>
+                    <View style={styles.announcementHeader}>
+                      <Ionicons name="megaphone" size={18} color="#4ADE80" />
+                      <Text style={styles.announcementDate}>
+                        {new Date(announcement.created_at).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                    </View>
+                    <Text style={styles.announcementMessage}>{announcement.message}</Text>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.announcementPlaceholder}>
+                  <Ionicons name="megaphone-outline" size={40} color="rgba(255,255,255,0.3)" />
+                  <Text style={styles.announcementPlaceholderText}>
+                    No announcements yet
                   </Text>
                 </View>
-                <Text style={styles.announcementMessage}>{announcement.message}</Text>
-              </View>
-            ))
-          ) : (
-            <View style={styles.announcementPlaceholder}>
-              <Ionicons name="megaphone-outline" size={40} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.announcementPlaceholderText}>
-                No announcements yet
-              </Text>
+              )}
             </View>
-          )}
+          </BlurView>
         </View>
       </>
     );
@@ -824,9 +828,17 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.5)',
     fontSize: 14,
   },
+  announcementsCardContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: 12,
+  },
+  announcementsCardInner: {
+    padding: 16,
+  },
   announcementCard: {
     backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
