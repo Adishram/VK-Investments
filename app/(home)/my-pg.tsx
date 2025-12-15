@@ -497,12 +497,31 @@ export default function MyPGPage() {
         {/* Announcements Section */}
         <View style={styles.announcementsSection}>
           <Text style={styles.sectionTitle}>Announcements</Text>
-          <View style={styles.announcementPlaceholder}>
-            <Ionicons name="megaphone-outline" size={40} color="rgba(255,255,255,0.3)" />
-            <Text style={styles.announcementPlaceholderText}>
-              No announcements yet
-            </Text>
-          </View>
+          {(bookingInfo as any)?.announcements && (bookingInfo as any).announcements.length > 0 ? (
+            (bookingInfo as any).announcements.map((announcement: any, index: number) => (
+              <View key={announcement.id || index} style={styles.announcementCard}>
+                <View style={styles.announcementHeader}>
+                  <Ionicons name="megaphone" size={18} color="#4ADE80" />
+                  <Text style={styles.announcementDate}>
+                    {new Date(announcement.created_at).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                </View>
+                <Text style={styles.announcementMessage}>{announcement.message}</Text>
+              </View>
+            ))
+          ) : (
+            <View style={styles.announcementPlaceholder}>
+              <Ionicons name="megaphone-outline" size={40} color="rgba(255,255,255,0.3)" />
+              <Text style={styles.announcementPlaceholderText}>
+                No announcements yet
+              </Text>
+            </View>
+          )}
         </View>
       </>
     );
@@ -735,6 +754,29 @@ const styles = StyleSheet.create({
   announcementPlaceholderText: {
     color: 'rgba(255,255,255,0.5)',
     fontSize: 14,
+  },
+  announcementCard: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4ADE80',
+  },
+  announcementHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  announcementDate: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+  },
+  announcementMessage: {
+    fontSize: 15,
+    color: '#fff',
+    lineHeight: 22,
   },
   // Empty state
   emptyState: {

@@ -125,7 +125,7 @@ const runMigrations = async () => {
             CREATE TABLE IF NOT EXISTS announcements (
                 id SERIAL PRIMARY KEY,
                 pg_id INTEGER REFERENCES pg_listings(id),
-                owner_id INTEGER REFERENCES pg_owners(id),
+                owner_email VARCHAR(255),
                 message TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
@@ -158,20 +158,6 @@ const runMigrations = async () => {
             );
         `);
 
-        // Fix announcements owner_id type for Clerk integration
-        await pool.query(`
-            DO $$ 
-            BEGIN 
-                -- Drop foreign key if exists (we need to find the constraint name dynamically or assume default)
-                -- Usually it is announcements_owner_id_fkey
-                IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'announcements_owner_id_fkey') THEN
-                    ALTER TABLE announcements DROP CONSTRAINT announcements_owner_id_fkey;
-                END IF;
-
-                -- Change column type to VARCHAR
-                ALTER TABLE announcements ALTER COLUMN owner_id TYPE VARCHAR(255);
-            END $$;
-        `);
         
         console.log('Migrations completed successfully.');
     } catch (error) {
