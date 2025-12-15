@@ -414,12 +414,14 @@ export default function PGDetails() {
           <BlurView intensity={100} tint="light" style={styles.titleCard}>
             <View style={styles.titleCardInner}>
               <View style={styles.titleContent}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', flex: 1 }}>
-                  <Text style={styles.pgTitle}>{pg.title}</Text>
+                <Text style={styles.pgTitle}>{pg.title}</Text>
+                <View style={styles.locationRow}>
+                  <Ionicons name="location" size={16} color="#666" />
+                  <Text style={styles.locationText}>{pg.city}</Text>
                   {pg.gender && (
                     <View style={[
                       styles.genderBadge,
-                      { backgroundColor: pg.gender === 'women' ? '#FDF2F8' : pg.gender === 'men' ? '#EFF6FF' : '#F0FDF4' }
+                      { backgroundColor: pg.gender === 'women' ? '#FDF2F8' : pg.gender === 'men' ? '#EFF6FF' : '#F0FDF4', marginLeft: 8 }
                     ]}>
                       <Text style={[
                         styles.genderText,
@@ -429,10 +431,6 @@ export default function PGDetails() {
                       </Text>
                     </View>
                   )}
-                </View>
-                <View style={styles.locationRow}>
-                  <Ionicons name="location" size={16} color="#666" />
-                  <Text style={styles.locationText}>{pg.city}</Text>
                 </View>
               </View>
               <View style={styles.ratingBadge}>

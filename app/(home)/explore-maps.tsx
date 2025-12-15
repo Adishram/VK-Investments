@@ -100,22 +100,34 @@ export default function ExploreMaps() {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      setPgs(await api.getPGs().then(data => data.filter(pg => pg.latitude && pg.longitude)));
+      return;
+    }
     
     Keyboard.dismiss();
     setSelectedPG(null);
     
     try {
-      const result = await api.geocodeAddress(searchQuery);
+      // Filter PGs by search query
+      const allPgs = await api.getPGs();
+      const filtered = allPgs.filter(pg => 
+        pg.latitude && pg.longitude &&
+        (pg.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         pg.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         pg.location?.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
       
-      if (result) {
+      setPgs(filtered);
+      
+      // Zoom to first result if found
+      if (filtered.length > 0 && filtered[0].latitude && filtered[0].longitude) {
         const newRegion: Region = {
-          latitude: result.lat,
-          longitude: result.lon,
+          latitude: filtered[0].latitude,
+          longitude: filtered[0].longitude,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         };
-        
         mapRef.current?.animateToRegion(newRegion, 1000);
         setRegion(newRegion);
       }
@@ -257,20 +269,31 @@ export default function ExploreMaps() {
               style={styles.popupImage}
               resizeMode="cover"
             />
+            <View style={styles.titleCardInner}>
+                <View style={styles.titleContent}>
+                  <Text style={styles.pgTitle}>{selectedPG.title}</Text>
+                  <View style={styles.locationRow}>
+                    <Ionicons name="location" size={16} color="#666" />
+                    <Text style={styles.locationText}>{selectedPG.city}</Text>
+                    {selectedPG.gender && (
+                      <View style={[
+                        styles.genderBadge,
+                        { backgroundColor: selectedPG.gender === 'women' ? '#FDF2F8' : selectedPG.gender === 'men' ? '#EFF6FF' : '#F0FDF4', marginLeft: 8 }
+                      ]}>
+                        <Text style={[
+                          styles.genderText,
+                          { color: selectedPG.gender === 'women' ? '#DB2777' : selectedPG.gender === 'men' ? '#2563EB' : '#16A34A' }
+                        ]}>
+                          {selectedPG.gender === 'women' ? 'Women' : selectedPG.gender === 'men' ? 'Men' : 'Unisex'}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+            </View>
             
             {/* PG Info */}
             <View style={styles.popupContent}>
-              <Text style={styles.popupTitle} numberOfLines={2}>
-                {selectedPG.title}
-              </Text>
-              
-              <View style={styles.popupLocationRow}>
-                <Ionicons name="location" size={14} color="#888" />
-                <Text style={styles.popupLocation} numberOfLines={1}>
-                  {selectedPG.city}
-                </Text>
-              </View>
-              
               <View style={styles.popupFooter}>
                 <Text style={styles.popupPrice}>
                   ₹{selectedPG.price?.toLocaleString('en-IN')}/month
@@ -422,6 +445,36 @@ const styles = StyleSheet.create({
   viewButtonText: {
     color: '#fff',
     fontSize: 15,
+    fontWeight: '600',
+  },
+  titleCardInner: {
+    padding: 12,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+  },
+  titleContent: {
+    gap: 4,
+  },
+  pgTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111',
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  locationText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  genderBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  genderText: {
+    fontSize: 11,
     fontWeight: '600',
   },
   
