@@ -12,6 +12,9 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust Proxy for Render deployment
+app.set('trust proxy', 1);
+
 console.log('Port configured:', PORT);
 
 // Security Middleware
