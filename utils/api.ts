@@ -100,6 +100,14 @@ export const api = {
     });
   },
 
+  // Delete PG
+  async deletePG(id: number): Promise<void> {
+    const response = await fetch(`${API_URL}/pg/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete PG');
+  },
+
   // Get PGs by city
   async getPGsByCity(city: string): Promise<PGListing[]> {
     const allPGs = await this.getPGs();

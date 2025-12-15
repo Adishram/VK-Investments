@@ -61,7 +61,7 @@ export default function OwnerDashboard() {
 
   const handleLogout = async () => {
     await logout();
-    router.replace('/(auth)/owner-login');
+    router.replace('/(auth)/sign-in');
   };
 
   const dashboardItems = [

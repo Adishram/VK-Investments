@@ -80,6 +80,22 @@ function Step1Content() {
   const { formData, updateFormData, setCurrentStep } = usePGForm();
   const [searchAddress, setSearchAddress] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredLocations, setFilteredLocations] = useState<Array<{name: string; lat: number; lon: number}>>([]);
+
+  // Predefined Chennai locations for autocomplete
+  const chennaiLocations = [
+    { name: 'Anna Nagar, Chennai', lat: 13.0850, lon: 80.2101 },
+    { name: 'T Nagar, Chennai', lat: 13.0418, lon: 80.2341 },
+    { name: 'Adyar, Chennai', lat: 13.0067, lon: 80.2571 },
+    { name: 'Velachery, Chennai', lat: 12.9750, lon: 80.2212 },
+    { name: 'Guindy, Chennai', lat: 13.0067, lon: 80.2206 },
+    { name: 'Mylapore, Chennai', lat: 13.0339, lon: 80.2619 },
+    { name: 'Porur, Chennai', lat: 13.0358, lon: 80.1560 },
+    { name: 'Tambaram, Chennai', lat: 12.9249, lon: 80.1000 },
+    { name: 'OMR, Chennai', lat: 12.9010, lon: 80.2279 },
+    { name: 'ECR, Chennai', lat: 12.8237, lon: 80.2457 },
+  ];
 
   useEffect(() => {
     setCurrentStep(1);
@@ -91,22 +107,28 @@ function Step1Content() {
     { value: 'unisex', label: 'Unisex' },
   ];
 
-  const handleSearchAddress = async () => {
-    if (!searchAddress.trim()) return;
-    
-    try {
-      setIsSearching(true);
-      const result = await api.geocodeAddress(searchAddress);
-      updateFormData({
-        latitude: parseFloat(result.lat),
-        longitude: parseFloat(result.lon),
-        address: result.display_name || searchAddress,
-      });
-    } catch (error) {
-      Alert.alert('Error', 'Could not find address. Please try again or drag the marker.');
-    } finally {
-      setIsSearching(false);
+  const handleSearchAddress = (text: string) => {
+    setSearchAddress(text);
+    if (text.trim().length > 1) {
+      const filtered = chennaiLocations.filter(loc =>
+        loc.name.toLowerCase().includes(text.toLowerCase())
+      );
+      setFilteredLocations(filtered);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+      setFilteredLocations([]);
     }
+  };
+
+  const selectLocation = (location: {name: string; lat: number; lon: number}) => {
+    setSearchAddress(location.name);
+    setShowSuggestions(false);
+    updateFormData({
+      latitude: location.lat,
+      longitude: location.lon,
+      locality: location.name,
+    });
   };
 
   const handleMapPress = (e: any) => {
@@ -372,26 +394,30 @@ function Step1Content() {
             />
           </View>
 
-          {/* Map Section */}
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Set Location on Map *</Text>
-          
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
+          {/* Location Search with Autocomplete */}
+          <View style={styles.inputFull}>
+            <Text style={styles.inputLabel}>Search Location</Text>
             <TextInput
-              style={styles.searchInput}
-              placeholder="Search for address..."
+              style={styles.input}
+              placeholder="Type to search (e.g. Anna Nagar)..."
               placeholderTextColor="#9CA3AF"
               value={searchAddress}
-              onChangeText={setSearchAddress}
-              onSubmitEditing={handleSearchAddress}
+              onChangeText={handleSearchAddress}
             />
-            <TouchableOpacity 
-              style={styles.searchButton}
-              onPress={handleSearchAddress}
-              disabled={isSearching}
-            >
-              <Ionicons name={isSearching ? "hourglass" : "search"} size={20} color="#fff" />
-            </TouchableOpacity>
+            {showSuggestions && filteredLocations.length > 0 && (
+              <View style={styles.suggestionsContainer}>
+                {filteredLocations.map((loc, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.suggestionItem}
+                    onPress={() => selectLocation(loc)}
+                  >
+                    <Ionicons name="location-outline" size={16} color="#4ADE80" />
+                    <Text style={styles.suggestionText}>{loc.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* Map */}
@@ -413,7 +439,7 @@ function Step1Content() {
                 } : undefined}
                 onPress={handleMapPress}
               >
-                {formData.latitude && formData.longitude && (
+                {!!formData.latitude && !!formData.longitude && (
                   <Marker
                     coordinate={{
                       latitude: formData.latitude,
@@ -783,5 +809,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
+  },
+  suggestionsContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    maxHeight: 200,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: '#374151',
   },
 });

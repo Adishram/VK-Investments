@@ -97,6 +97,13 @@ export default function AdminDashboard() {
       icon: 'notifications-outline',
       color: '#F59E0B',
     },
+    {
+      id: 'support-messages',
+      title: 'Support Inbox',
+      subtitle: 'User Queries',
+      icon: 'chatbubble-ellipses-outline',
+      color: '#EC4899',
+    },
   ];
 
   const handleCardPress = async (id: string) => {
