@@ -174,7 +174,8 @@ cron.schedule('*/4 * * * *', async () => {
     }
 });
 
-// --- Email Service (Resend only) ---
+// --- Email Service (Resend) - COMMENTED OUT, using expo-mail-composer from frontend ---
+/*
 const sendEmail = async (to, subject, text) => {
     if (!process.env.RESEND_API_KEY) {
         console.log(`⚠️ [EMAIL SKIPPED] RESEND_API_KEY not configured. To: ${to}`);
@@ -201,6 +202,8 @@ const sendEmail = async (to, subject, text) => {
         return false;
     }
 };
+*/
+
 
 // --- Helper Functions ---
 const hashPassword = (password) => {
@@ -278,25 +281,16 @@ app.post('/api/super-admin/add-owner', async (req, res) => {
 
         const result = await pool.query(query, values);
         
-        // Send Email
-        const emailBody = `Hello ${name},
-
-Your account has been created on Book My PG.
-
-Login Credentials:
-Email: ${email}
-Password: ${randomPassword}
-
-Please login and change your password immediately.
-
-Regards,
-Team Book My PG`;
-        await sendEmail(email, 'Welcome to Book My PG - Your Credentials', emailBody);
+        
+        // Email will be sent from frontend using expo-mail-composer
+        // await sendEmail(email, 'Welcome to Book My PG - Your Credentials', emailBody);
 
         res.status(201).json({
             owner: result.rows[0],
             generatedPassword: randomPassword,
-            message: 'Owner added successfully. Email sent.'
+            ownerEmail: email,
+            ownerName: name,
+            message: 'Owner added successfully. Please send credentials via email.'
         });
 
     } catch (error) {

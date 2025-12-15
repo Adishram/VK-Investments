@@ -351,7 +351,7 @@ export const api = {
     mobile: string;
     city: string;
     state?: string;
-  }): Promise<{ owner: any; generatedPassword: string; message: string }> {
+  }): Promise<{ owner: any; generatedPassword: string; ownerEmail: string; ownerName: string; message: string }> {
     const response = await fetch(`${API_URL}/super-admin/add-owner`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

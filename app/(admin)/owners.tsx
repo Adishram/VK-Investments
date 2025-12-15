@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as MailComposer from 'expo-mail-composer';
 import api from '../../utils/api';
 
 interface Owner {
@@ -99,12 +100,38 @@ export default function OwnersScreen() {
       setSubmitting(true);
       const result = await api.addOwner(formData);
       
-      // Import clipboard dynamically
+      // Compose email body
+      const emailBody = `Hello ${result.ownerName},
+
+Your account has been created on Book My PG.
+
+Login Credentials:
+Email: ${result.ownerEmail}
+Password: ${result.generatedPassword}
+
+Please login and change your password immediately.
+
+Regards,
+Team Book My PG`;
+
+      // Check if mail composer is available
+      const isAvailable = await MailComposer.isAvailableAsync();
+      
+      if (isAvailable) {
+        // Open mail composer with pre-filled data
+        await MailComposer.composeAsync({
+          recipients: [result.ownerEmail],
+          subject: 'Welcome to Book My PG - Your Credentials',
+          body: emailBody,
+        });
+      }
+      
+      // Import clipboard dynamically for fallback
       const Clipboard = require('expo-clipboard');
       
       Alert.alert(
         'Success ✓',
-        `Owner "${result.owner.name}" added successfully!\n\nGenerated Password: ${result.generatedPassword}\n\nCredentials have been sent via email.`,
+        `Owner "${result.owner.name}" added successfully!\n\nGenerated Password: ${result.generatedPassword}\n\n${isAvailable ? 'Email composer opened. Please send the email.' : 'Please copy the password and send it manually via email.'}`,
         [
           { 
             text: 'Copy Password', 
