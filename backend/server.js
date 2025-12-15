@@ -3,17 +3,53 @@ const express = require('express');
 require('dotenv').config();
 const { Pool } = require('pg');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
 const axios = require('axios');
 const crypto = require('crypto');
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 console.log('Port configured:', PORT);
 
+// Security Middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+        },
+    },
+}));
+
+// Rate Limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.'
+});
+app.use('/api/', limiter);
+
+// CORS Configuration
+const allowedOrigins = [
+    'http://localhost:8081',
+    'http://localhost:19006',
+    'https://vk-investments.vercel.app', // Add production domain
+];
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
+
 // Middleware
-app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -158,6 +194,25 @@ const runMigrations = async () => {
             );
         `);
 
+        // support_messages table (for support escalation)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS support_messages (
+                id SERIAL PRIMARY KEY,
+                conversation_id VARCHAR(255) NOT NULL,
+                user_email VARCHAR(255) NOT NULL,
+                user_name VARCHAR(255),
+                message TEXT NOT NULL,
+                sender_type VARCHAR(20) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_resolved BOOLEAN DEFAULT FALSE
+            );
+        `);
+        
+        // Create index for faster conversation queries
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_support_conversation 
+            ON support_messages(conversation_id, created_at DESC);
+        `);
         
         console.log('Migrations completed successfully.');
     } catch (error) {
@@ -624,6 +679,84 @@ app.get('/api/owner/:id', async (req, res) => {
             profilePicture: owner.profile_picture
         });
     } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// --- Support Messaging APIs ---
+
+// Escalate to Support
+app.post('/api/support/escalate', async (req, res) => {
+    const { userEmail, userName, message } = req.body;
+    try {
+        const { v4: uuidv4 } = require('uuid');
+        const conversationId = uuidv4();
+        const result = await pool.query(
+            `INSERT INTO support_messages (conversation_id, user_email, user_name, message, sender_type)
+             VALUES ($1, $2, $3, $4, 'user') RETURNING *`,
+            [conversationId, userEmail, userName, message]
+        );
+        res.status(201).json({ success: true, conversationId, message: result.rows[0] });
+    } catch (error) {
+        console.error('Error escalating support:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Send Support Message
+app.post('/api/support/message', async (req, res) => {
+    const { conversationId, userEmail, userName, message, senderType } = req.body;
+    try {
+        const result = await pool.query(
+            `INSERT INTO support_messages (conversation_id, user_email, user_name, message, sender_type)
+             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            [conversationId, userEmail, userName || 'Admin', message, senderType]
+        );
+        res.status(201).json({ success: true, message: result.rows[0] });
+    } catch (error) {
+        console.error('Error sending message:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Get All Conversations (Admin)
+app.get('/api/support/conversations', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT DISTINCT ON (conversation_id)
+                conversation_id, user_email, user_name,
+                message as last_message, created_at as last_updated, is_resolved
+            FROM support_messages
+            ORDER BY conversation_id, created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching conversations:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Get Conversation History
+app.get('/api/support/conversation/:id', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT * FROM support_messages WHERE conversation_id = $1 ORDER BY created_at ASC`,
+            [req.params.id]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching conversation:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Resolve Conversation
+app.put('/api/support/conversation/:id/resolve', async (req, res) => {
+    try {
+        await pool.query(`UPDATE support_messages SET is_resolved = true WHERE conversation_id = $1`, [req.params.id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error resolving conversation:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
@@ -1218,6 +1351,28 @@ app.get('/api/pg/:id/announcements', async (req, res) => {
         res.json(result.rows);
     } catch (error) {
         console.error('Error fetching announcements:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Update Customer Payment Status (for monthly rent renewal)
+app.put('/api/customer/:id/payment-status', async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    try {
+        const result = await pool.query(
+            'UPDATE customers SET status = $1, paid_date = $2 WHERE id = $3 RETURNING *',
+            [status, status === 'Paid' ? new Date().toISOString() : null, id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+        
+        res.json({ success: true, customer: result.rows[0] });
+    } catch (error) {
+        console.error('Error updating payment status:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

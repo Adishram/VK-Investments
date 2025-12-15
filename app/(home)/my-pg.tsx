@@ -222,6 +222,7 @@ export default function MyPGPage() {
   const [selectedVisit, setSelectedVisit] = useState<any>(null);
   const [showCheckInPicker, setShowCheckInPicker] = useState(false);
   const [editingCheckIn, setEditingCheckIn] = useState(false);
+  const [payingRent, setPayingRent] = useState(false);
   
   const userEmail = user?.primaryEmailAddress?.emailAddress;
 
@@ -447,6 +448,74 @@ export default function MyPGPage() {
             </View>
           </BlurView>
         </View>
+
+        {/* Pay Rent Button */}
+        {customer.status !== 'Paid' && (
+          <TouchableOpacity 
+            style={styles.payRentButton}
+            onPress={async () => {
+              if (!customer.amount) {
+                Alert.alert('Error', 'Rent amount not set');
+                return;
+              }
+              
+              try {
+                setPayingRent(true);
+                // Create Razorpay order
+                const orderResponse = await fetch(`https://vk-investment-backend.onrender.com/api/payment/create-order`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ amount: customer.amount }),
+                });
+                
+                if (!orderResponse.ok) throw new Error('Failed to create order');
+                const orderData = await orderResponse.json();
+                
+                // For now, show success (in production, integrate actual Razorpay payment)
+                Alert.alert(
+                  'Payment Gateway',
+                  `Rent: ₹${customer.amount}\n\nIn production, this will open Razorpay payment gateway.`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Simulate Payment',
+                      onPress: async () => {
+                        try {
+                          // Update payment status
+                          await api.updatePaymentStatus(customer.id, 'Paid');
+                          Alert.alert('Success', 'Rent payment successful!');
+                          loadBookingInfo();
+                        } catch (err) {
+                          Alert.alert('Error', 'Payment update failed');
+                        }
+                      }
+                    }
+                  ]
+                );
+              } catch (error) {
+                Alert.alert('Error', 'Failed to initiate payment');
+              } finally {
+                setPayingRent(false);
+              }
+            }}
+            disabled={payingRent}
+          >
+            {payingRent ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="card-outline" size={20} color="#fff" />
+                <Text style={styles.payRentButtonText}>Pay This Month's Rent</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
+        {customer.status === 'Paid' && (
+          <View style={styles.paidBadge}>
+            <Ionicons name="checkmark-circle" size={20} color="#4ADE80" />
+            <Text style={styles.paidBadgeText}>Rent Paid for This Month</Text>
+          </View>
+        )}
 
         {/* Scheduled Visits Section - Now on top */}
         {visitRequests.length > 0 && (
@@ -777,6 +846,43 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#fff',
     lineHeight: 22,
+  },
+  payRentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#4ADE80',
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginTop: 16,
+    shadowColor: '#4ADE80',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  payRentButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  paidBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(74, 222, 128, 0.2)',
+    paddingVertical: 14,
+    borderRadius: 16,
+    marginTop: 16,
+    borderWidth: 2,
+    borderColor: '#4ADE80',
+  },
+  paidBadgeText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#4ADE80',
   },
   // Empty state
   emptyState: {

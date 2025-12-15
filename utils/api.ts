@@ -286,6 +286,17 @@ export const api = {
     return response.json();
   },
 
+  // Update Customer Payment Status
+  async updatePaymentStatus(customerId: number, status: string): Promise<any> {
+    const response = await fetch(`${API_URL}/customer/${customerId}/payment-status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!response.ok) throw new Error('Failed to update payment status');
+    return response.json();
+  },
+
   // Cancel Booking
   async cancelBooking(customerId: number): Promise<any> {
     const response = await fetch(`${API_URL}/customer/${customerId}/cancel`, {
