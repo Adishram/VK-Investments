@@ -855,9 +855,9 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.6)',
   },
   announcementMessage: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#fff',
-    lineHeight: 22,
+    lineHeight: 24,
   },
   payRentButton: {
     flexDirection: 'row',
