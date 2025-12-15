@@ -1013,6 +1013,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F2925',
     borderRadius: 20,
     marginTop: 10,
+    marginBottom: 24,
   },
   datePickerDoneText: {
     color: '#fff',

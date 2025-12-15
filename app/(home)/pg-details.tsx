@@ -414,7 +414,7 @@ export default function PGDetails() {
           <BlurView intensity={100} tint="light" style={styles.titleCard}>
             <View style={styles.titleCardInner}>
               <View style={styles.titleContent}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', flex: 1 }}>
                   <Text style={styles.pgTitle}>{pg.title}</Text>
                   {pg.gender && (
                     <View style={[
@@ -482,8 +482,8 @@ export default function PGDetails() {
                     </View>
                     <Text style={styles.roomDetails}>{room.isAC ? 'AC' : 'Non-AC'}</Text>
                     <View style={styles.roomPricing}>
-                      <Text style={styles.roomPrice}>₹{room.price}/mo</Text>
-                      <Text style={styles.depositText}>Dep: ₹{room.deposit || (room.price * 2)}</Text>
+                      <Text style={styles.roomPrice}>₹{room.price || pg.price}/mo</Text>
+                      <Text style={styles.depositText}>Dep: ₹{room.deposit || pg.safety_deposit || (room.price || pg.price) * 2}</Text>
                     </View>
                   </View>
                 ))
@@ -1073,17 +1073,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 8,
+    gap: 8,
   },
   roomType: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    flex: 1,
   },
   availableBadge: {
     backgroundColor: '#4ADE80',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
+    flexShrink: 0,
   },
   availableText: {
     color: '#000',

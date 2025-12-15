@@ -79,17 +79,23 @@ export default function ExploreMaps() {
           longitudeDelta: 0.05,
         };
         setRegion(newRegion);
-        setTimeout(() => {
-          mapRef.current?.animateToRegion(newRegion, 1000);
-        }, 500);
       }
 
       const pgData = await api.getPGs();
       setPgs(pgData.filter(pg => pg.latitude && pg.longitude));
+      setLoading(false);
     } catch (error) {
       console.error('Error loading data:', error);
-    } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMapReady = () => {
+    // Force map to re-render markers after it's fully loaded
+    if (region.latitude !== DEFAULT_REGION.latitude) {
+      setTimeout(() => {
+        mapRef.current?.animateToRegion(region, 500);
+      }, 100);
     }
   };
 
@@ -168,6 +174,7 @@ export default function ExploreMaps() {
         showsUserLocation={true}
         showsMyLocationButton={false}
         onPress={closePopup}
+        onMapReady={handleMapReady}
       >
         {/* Custom Marker Pins with TouchableOpacity for iOS */}
         {pgs.map((pg) => (
