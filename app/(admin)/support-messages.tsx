@@ -172,7 +172,7 @@ export default function SupportMessagesScreen() {
           <Text style={styles.userEmail}>{conversation.user_email}</Text>
         </View>
         {conversation.is_resolved && (
-          <Ionicons name=\"checkmark-circle\" size={24} color=\"#10B981\" />
+          <Ionicons name="checkmark-circle" size={24} color="#10B981" />
         )}
       </View>
       <Text style={styles.lastMessage} numberOfLines={2}>
@@ -199,12 +199,11 @@ export default function SupportMessagesScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle=\"light-content\" backgroundColor=\"#4B5563\" />
+      <StatusBar barStyle="light-content" backgroundColor="#4B5563" />
       
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name=\"arrow-back\" size={24} color=\"#fff\" />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Support Messages</Text>
         <View style={{ width: 40 }} />
@@ -212,19 +211,19 @@ export default function SupportMessagesScreen() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size=\"large\" color=\"#8B5CF6\" />
+          <ActivityIndicator size="large" color="#8B5CF6" />
           <Text style={styles.loadingText}>Loading conversations...</Text>
         </View>
       ) : conversations.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name=\"chatbubbles-outline\" size={64} color=\"#D1D5DB\" />
+          <Ionicons name="chatbubbles-outline" size={64} color="#D1D5DB" />
           <Text style={styles.emptyText}>No support requests yet</Text>
         </View>
       ) : (
         <ScrollView
           style={styles.scrollView}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor=\"#8B5CF6\" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#8B5CF6" />
           }
         >
           {conversations.map(renderConversation)}
@@ -232,16 +231,15 @@ export default function SupportMessagesScreen() {
         </ScrollView>
       )}
 
-      {/* Conversation Detail Modal */}
       <Modal
         visible={!!selectedConversation}
-        animationType=\"slide\"
+        animationType="slide"
         onRequestClose={() => setSelectedConversation(null)}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setSelectedConversation(null)}>
-              <Ionicons name=\"close\" size={28} color=\"#374151\" />
+              <Ionicons name="close" size={28} color="#374151" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>
               {selectedConversation?.user_name || 'Conversation'}
@@ -249,13 +247,13 @@ export default function SupportMessagesScreen() {
             <TouchableOpacity
               onPress={() => selectedConversation && handleResolve(selectedConversation.conversation_id)}
             >
-              <Ionicons name=\"checkmark-done\" size={28} color=\"#10B981\" />
+              <Ionicons name="checkmark-done" size={28} color="#10B981" />
             </TouchableOpacity>
           </View>
 
           {loadingMessages ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size=\"large\" color=\"#8B5CF6\" />
+              <ActivityIndicator size="large" color="#8B5CF6" />
             </View>
           ) : (
             <FlatList
@@ -269,8 +267,8 @@ export default function SupportMessagesScreen() {
           <View style={styles.replyContainer}>
             <TextInput
               style={styles.replyInput}
-              placeholder=\"Type your reply...\"
-              placeholderTextColor=\"#9CA3AF\"
+              placeholder="Type your reply..."
+              placeholderTextColor="#9CA3AF"
               value={replyText}
               onChangeText={setReplyText}
               multiline
@@ -281,9 +279,9 @@ export default function SupportMessagesScreen() {
               disabled={sending || !replyText.trim()}
             >
               {sending ? (
-                <ActivityIndicator size=\"small\" color=\"#fff\" />
+                <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Ionicons name=\"send\" size={20} color=\"#fff\" />
+                <Ionicons name="send" size={20} color="#fff" />
               )}
             </TouchableOpacity>
           </View>
@@ -402,7 +400,6 @@ const styles = StyleSheet.create({
   bottomSpacing: {
     height: 40,
   },
-  // Modal Styles
   modalContainer: {
     flex: 1,
     backgroundColor: '#F3F4F6',
