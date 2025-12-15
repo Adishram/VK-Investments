@@ -15,11 +15,16 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.vkinvestments.bookmypg",
+      "buildNumber": "1.0.0",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show PGs near you."
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show PGs near you.",
+        "NSCameraUsageDescription": "This app needs access to camera to upload PG photos.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to photo library to upload PG photos."
       }
     },
     "android": {
+      "package": "com.vkinvestments.bookmypg",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
