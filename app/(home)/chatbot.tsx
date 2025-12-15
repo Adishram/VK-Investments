@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, 
   TextInput, Dimensions, KeyboardAvoidingView, Platform, FlatList,
-  ActivityIndicator, ImageBackground
+  ActivityIndicator, ImageBackground, Modal, Alert
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -94,6 +94,13 @@ export default function ChatbotPage() {
   const [allPGs, setAllPGs] = useState<PGListing[]>([]);
   const [showInitialCards, setShowInitialCards] = useState(true);
   
+  // Frustration detection
+  const [queryHistory, setQueryHistory] = useState<string[]>([]);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportMessage, setSupportMessage] = useState('');
+  const [escalating, setEscalating] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  
   // Dynamic greeting
   const greeting = useMemo(() => getGreeting(), []);
   const userName = user?.firstName || 'there';
@@ -138,6 +145,28 @@ export default function ChatbotPage() {
     setMessages(prev => [...prev, userMessage, loadingMessage]);
     setInputText('');
     setIsLoading(true);
+    
+    // Frustration Detection: Check for repeated similar queries
+    const newHistory = [...queryHistory, text.trim().toLowerCase()];
+    setQueryHistory(newHistory);
+    
+    // Simple similarity check - look for repeated keywords in last 3 queries
+    if (newHistory.length >= 3) {
+      const lastThree = newHistory.slice(-3);
+      const keywords = lastThree.flatMap(q => q.split(' ').filter(w => w.length > 3));
+      const keywordCounts = keywords.reduce((acc, k) => {
+        acc[k] = (acc[k] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // If any keyword appears 3+ times, offer support escalation
+      const hasRepeatedQuery = Object.values(keywordCounts).some(count => count >= 3);
+      if (hasRepeatedQuery && !conversationId) {
+        setTimeout(() => {
+          setShowSupportModal(true);
+        }, 2000);
+      }
+    }
     
     try {
       const response = await api.sendChatMessage(
@@ -312,6 +341,96 @@ export default function ChatbotPage() {
               )}
             </TouchableOpacity>
           </View>
+
+          {/* Support Escalation Modal */}
+          <Modal
+            visible={showSupportModal}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setShowSupportModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Ionicons name="help-circle" size={48} color="#EF4444" />
+                  <Text style={styles.modalTitle}>Need More Help?</Text>
+                  <Text style={styles.modalSubtitle}>
+                    It looks like you're having trouble finding what you need.
+                    Would you like to connect with our support team?
+                  </Text>
+                </View>
+                
+                <TextInput
+                  style={styles.supportInput}
+                  placeholder="Describe your issue..."
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                  numberOfLines={4}
+                  value={supportMessage}
+                  onChangeText={setSupportMessage}
+                />
+                
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={styles.modalButtonSecondary}
+                    onPress={() => {
+                      setShowSupportModal(false);
+                      setSupportMessage('');
+                    }}
+                  >
+                    <Text style={styles.modalButtonSecondaryText}>No, Thanks</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.modalButtonPrimary}
+                    onPress={async () => {
+                      if (!supportMessage.trim()) {
+                        Alert.alert('Error', 'Please describe your issue');
+                        return;
+                      }
+                      
+                      try {
+                        setEscalating(true);
+                        const result = await fetch('https://vk-investment-backend.onrender.com/api/support/escalate', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            userEmail: userEmail || 'anonymous@example.com',
+                            userName: userName,
+                            message: supportMessage
+                          })
+                        });
+                        
+                        if (result.ok) {
+                          const data = await result.json();
+                          setConversationId(data.conversationId);
+                          Alert.alert(
+                            'Support Request Sent',
+                            'Our team will respond shortly. You\'ll see their message right here in the chat!'
+                          );
+                          setShowSupportModal(false);
+                          setSupportMessage('');
+                        } else {
+                          throw new Error('Failed to escalate');
+                        }
+                      } catch (error) {
+                        Alert.alert('Error', 'Failed to send support request. Please try again.');
+                      } finally {
+                        setEscalating(false);
+                      }
+                    }}
+                    disabled={escalating}
+                  >
+                    {escalating ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.modalButtonPrimaryText}>Connect to Support</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
@@ -508,5 +627,76 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.6,
+  },
+  // Support Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    width: '100%',
+    maxWidth: 400,
+    padding: 24,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 15,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  supportInput: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: '#111827',
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButtonSecondary: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+  },
+  modalButtonSecondaryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  modalButtonPrimary: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+  },
+  modalButtonPrimaryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });

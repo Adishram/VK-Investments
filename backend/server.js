@@ -34,9 +34,11 @@ app.use('/api/', limiter);
 
 // CORS Configuration
 const allowedOrigins = [
-    'http://localhost:8081',
-    'http://localhost:19006',
-    'https://vk-investments.vercel.app', // Add production domain
+    'http://localhost:8081',           // Expo dev
+    'http://localhost:19006',          // Expo web
+    'http://localhost:3000',           // Next.js dev
+    'https://vk-investments.vercel.app', // Production frontend
+    'https://book-my-pg.vercel.app',   // Alternative production domain
 ];
 app.use(cors({
     origin: function (origin, callback) {
